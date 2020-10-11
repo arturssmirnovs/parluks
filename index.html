@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Hello Webview!</title>
+    <link rel="stylesheet" href="css/index.css">
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <form id="search">
+          <input class="search" id="search-value" name="url" value="https://github.com/explore" placeholder="https://github.com/explore" type="search">
+        </form>
+        <div class="action-left">
+          <span id="action-back" class="action">
+            <img src="images/left.svg" alt="Back">
+          </span>
+          <span id="action-forward" class="action">
+            <img src="images/right.svg" alt="Forward">
+          </span>
+          <span id="action-refresh" class="action">
+            <img src="images/refresh.svg" alt="Refresh">
+          </span>
+        </div>
+        <div class="action-right">
+
+          <span id="action-zoom" class="action">
+            <img src="images/zoom.svg" alt="Zoom">
+          </span>
+          <span id="action-background" class="action">
+            <img src="images/background.svg" alt="Show background">
+          </span>
+          <span id="action-devices" class="action">
+            <img src="images/device.svg" alt="Developer tools">
+          </span>
+          <span id="action-donate" class="action">
+            <img src="images/donate.svg" alt="Donate">
+          </span>
+
+          <div id="zoom-input-wrapper" style="display: none">
+            <input type="range" id="size" name="size" min="1" max="100" value="50">
+          </div>
+        </div>
+
+      </div>
+      <div id="main" class="main">
+
+      </div>
+
+      <div id="devices-wrapper" style="display: none">
+        <div id="devices">
+          <div id="devices-list">
+
+          </div>
+          <button id="action-devices-close">Save</button>
+        </div>
+      </div>
+
+    </div>
+
+    <script>
+      require('./js/app.js')
+    </script>
+  </body>
+</html>
