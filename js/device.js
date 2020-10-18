@@ -35,11 +35,21 @@ class Device {
         label.innerHTML = this.attrs.name+" <small>"+this.attrs.width+"x"+this.attrs.height+"</small>";
 
         this.webview = document.createElement("webview");
-        this.webview.className = "webview "+this.attrs.type+""
+        if (this.app.settings_picture_background == 1) {
+            this.webview.className = "webview "+this.attrs.type+""
+        } else {
+            this.webview.className = "webview no-background "+this.attrs.type+""
+        }
         this.webview.setAttribute("partition", "persist:default");
-        this.webview.style = "width: "+this.attrs.width+"px;height: "+this.attrs.height+"px;";
-        this.webview.src = document.getElementById("search-value").value;
 
+        var resize = document.getElementById("size").value;
+        var size = {
+            width: this.attrs.width,
+            height: this.attrs.height
+        };
+        this.webview.style = "width: "+size.width*(resize/100)+"px;height: "+size.height*(resize/100)+"px;";
+
+        this.webview.src = document.getElementById("search-value").value;
 
         // rotate
         // screenshot
@@ -113,7 +123,6 @@ class Device {
 
             this.webContents.setUserAgent(this.attrs.userAgent);
 
-            var resize = document.getElementById("size").value;
             this.resize(resize);
         });
 
@@ -206,9 +215,10 @@ class Device {
         this.webview.style = "width: "+size.width*(resize/100)+"px;height: "+size.height*(resize/100)+"px;";
 
         this.webContents.enableDeviceEmulation({
-            screenPosition: 'mobile', // @TODO
+            screenPosition: (this.attrs.type == "tablet" || this.attrs.type == "phone" ? 'mobile' : 'desktop'), // @TODO
             screenSize: size,
             scale: (resize/100),
+            fitToView: false,
             viewSize: size
         });
 
@@ -234,11 +244,25 @@ class Device {
     }
 
     injectJS() {
-        this.webview.executeJavaScript(`window.onscroll = function() { console.log(JSON.stringify({action:"SCROLL", "value": this.scrollY})) }`, true);
+
+        if (this.app.settings_meta_override == 1) {
+            this.webview.executeJavaScript(`const metas = document.getElementsByTagName('meta');
+            for (let i = 0; i < metas.length; i++) {
+                if (metas[i].getAttribute('name') === "viewport") {
+                    metas[i].setAttribute('content', 'width=device-width');
+                }
+            }`, true);
+        }
+
+        if (this.app.settings_scroll == 1) {
+            this.webview.executeJavaScript(`window.onscroll = function() { console.log(JSON.stringify({action:"SCROLL", "value": this.scrollY})) }`, true);
+        }
     }
 
     scroll(value) {
-        this.webview.executeJavaScript(`window.scrollTo(0, ${value});`, true);
+        if (this.app.settings_scroll == 1) {
+            this.webview.executeJavaScript(`window.scrollTo(0, ${value});`, true);
+        }
     }
 
     static getDevices() {
