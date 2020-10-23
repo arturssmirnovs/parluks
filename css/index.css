@@ -98,6 +98,7 @@ label {
 
 .webview {
   display: flex;
+  box-sizing: content-box;
 }
 
 #devices-wrapper {

@@ -5,7 +5,7 @@ const Store = require('./store.js');
 
 const $ = document.querySelector.bind(document);
 
-const API_URL = "http://localhost/parluks-website/web/index.php?r=api/index";
+const API_URL = "https://parluks.com/api/index";
 
 const VERSION = "1.0";
 

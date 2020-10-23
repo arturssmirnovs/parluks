@@ -251,7 +251,14 @@ class Device {
                 if (metas[i].getAttribute('name') === "viewport") {
                     metas[i].setAttribute('content', 'width=device-width');
                 }
-            }`, true);
+            }
+            
+            var meta = document.createElement('meta');
+            meta.name = "viewport";
+            meta.content = "width=device-width";
+            document.getElementsByTagName('head')[0].appendChild(meta);
+            
+            `, true);
         }
 
         if (this.app.settings_scroll == 1) {
