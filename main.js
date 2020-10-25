@@ -4,6 +4,7 @@ const BrowserWindow = electron.BrowserWindow
 const path = require('path')
 const url = require('url')
 const Store = require('./js/store.js');
+const os = require('os'); // top of file
 
 const VERSION = "1.0.0";
 
@@ -39,7 +40,18 @@ function createWindow () {
   }
 
   mainWindow = new BrowserWindow({ width, height });
-  //mainWindow.setIcon(path.join(__dirname, 'app.ico'));
+
+  switch (os.platform()) {
+    case 'darwin':
+      //mainWindow.setIcon('src/app/assets/icons/icon.icns');
+      break;
+    case 'win32':
+      mainWindow.setIcon(path.join(__dirname, 'app.ico'));
+      break;
+    default:
+      mainWindow.setIcon(path.join(__dirname, 'images/icon.png'));
+      break;
+  }
 
   mainWindow.loadURL(url.format({
     pathname: path.join(__dirname, 'index.html'),
