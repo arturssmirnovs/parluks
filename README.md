@@ -13,3 +13,10 @@ MAC
 
 electron-packager . --overwrite --platform=darwin --arch=x64 --icon=icon_32.icns --prune=true --out=release-builds
 
+
+
+LINUX
+
+electron-packager . Parluks --platform linux --arch x64 --out dist/ --icon images/icon.png --name Parluks
+
+
