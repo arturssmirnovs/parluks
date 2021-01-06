@@ -1,6 +1,7 @@
 {
   "name": "Parluks",
   "version": "1.0.0",
+  "build": 11,
   "description": "Browser for developers",
   "main": "main.js",
   "scripts": {
