@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Parluks</title>
+    <link rel="stylesheet" href="css/boomerang-startup-analitycs.min.css">
+    <link rel="stylesheet" href="css/boostrap.css">
+    <link rel="stylesheet" href="css/index.css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:400,600,700,800|Roboto:400,500,700" rel="stylesheet">
+  </head>
+  <body id="body">
+    <div class="page">
+      <div class="header">
+        <form id="search">
+          <input class="search" id="search-value" name="url" value="https://github.com/arturssmirnovs/parluks" placeholder="https://github.com/arturssmirnovs/parluks" type="search">
+        </form>
+        <div class="action-left">
+          <span id="action-back" class="action">
+            <img src="images/left.svg" alt="Back">
+          </span>
+          <span id="action-forward" class="action">
+            <img src="images/right.svg" alt="Forward">
+          </span>
+          <span id="action-refresh" class="action">
+            <img src="images/refresh.svg" alt="Refresh">
+          </span>
+        </div>
+        <div class="action-right">
+
+          <span id="action-zoom" class="action">
+            <img src="images/zoom.svg" alt="Zoom">
+          </span>
+          <span id="action-background" class="action">
+            <img src="images/background.svg" alt="Show background">
+          </span>
+          <span id="action-devices" class="action">
+            <img src="images/device.svg" alt="Developer tools">
+          </span>
+          <span id="action-settings" class="action">
+            <img src="images/settings.svg" alt="Settings">
+          </span>
+          <span id="action-donate" class="action">
+            <img src="images/website.svg" alt="Website">
+          </span>
+
+          <div id="zoom-input-wrapper" style="display: none">
+            <input type="range" id="size" class="custom-range" name="size" min="1" max="100" value="50">
+          </div>
+        </div>
+
+      </div>
+      <div id="main" class="main">
+
+      </div>
+
+      <div id="devices-wrapper" style="display: none">
+        <div id="devices">
+          <h3 class="mt-0">Devices</h3>
+
+          <div id="devices-list">
+
+          </div>
+          <button id="action-devices-close" class="btn btn-styled btn-lg btn-base-1 mt-3">Save</button>
+        </div>
+      </div>
+
+      <div id="settings-wrapper" style="display: none">
+        <div id="settings">
+          <h3 class="mt-0">Settings</h3>
+
+          <div>
+            <label>Display mode</label>
+            <select id="settings-mode" class="form-control mb-3">
+              <option value="dark">Dark mode</option>
+              <option value="light">Light mode</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Follow scroll in other screens</label>
+            <select id="settings-scroll" class="form-control mb-3">
+              <option value="1">Yes</option>
+              <option value="0">No</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Zoom level</label>
+            <input type="range" id="settings-zoom" class="custom-range mb-3" name="size" min="1" max="100" value="50">
+          </div>
+
+          <div>
+            <label>Device picture background</label>
+            <select id="settings-background" class="form-control mb-3">
+              <option value="1">Yes</option>
+              <option value="0">No</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Override device meta width</label>
+            <select id="settings-width" class="form-control mb-3">
+              <option value="1">Yes</option>
+              <option value="0">No</option>
+            </select>
+          </div>
+
+          <button id="action-settings-close" class="btn btn-styled btn-lg btn-base-1">Save</button>
+        </div>
+      </div>
+
+      <div id="about" style="display: none">
+        <div class="about-container">
+          <img src="images/logo.png" alt="logo">
+
+          <p class="about-intro">Browser for developers</p>
+
+          <a id="about-start" class="btn btn-styled btn-lg btn-base-1">Start using</a>
+
+          <a id="about-update" style="display: none;">Download updates</a>
+        </div>
+      </div>
+
+    </div>
+
+    <script>
+      require('./js/app.js')
+    </script>
+  </body>
+</html>
