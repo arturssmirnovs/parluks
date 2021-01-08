@@ -5,9 +5,11 @@
   "main": "index.js",
   "dependencies": {
     "appdmg": "^0.6.0",
+    "macos-alias": "^0.2.11"
+  },
+  "devDependencies": {
     "electron-installer-dmg": "^3.0.0"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
