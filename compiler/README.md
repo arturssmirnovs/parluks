@@ -15,6 +15,5 @@ node build.js
 
 MAC
 
-electron-packager ../src/ Parluks --platform darwin --arch x64 --out ../install/mac/source/ --icon ../src/images/icon.png --name Parluks
-node buider.js
+electron-packager ../src/ Parluks --platform darwin --arch x64 --out ../install/mac/source/ --icon ../src/icon_32.icns --name Parluks node buider.js --overwrite
 
