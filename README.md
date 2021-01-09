@@ -11,10 +11,10 @@
 
 <p align="center">
   <a href="#key-features">Key Features</a> •
-  <a href="#how-to-use">Download</a> •
+  <a href="#download">Download</a> •
   <a href="#screenshots">Screenshots</a> •
-  <a href="#credits">How To Use</a> •
-  <a href="#related">Credits</a> •
+  <a href="#how-to-use">How To Use</a> •
+  <a href="#credits">Credits</a> •
   <a href="#license">License</a>
 </p>
 
