@@ -6,13 +6,12 @@ const path = require('path');
 
 // 2. Define input and output directory.
 // Important: the directories must be absolute, not relative e.g
-// appDirectory: "C:\\Users\sdkca\Desktop\OurCodeWorld-win32-x64", 
-const APP_DIR = path.resolve(__dirname, './../../parluks/parluks-win32-x64');
+const APP_DIR = path.resolve(__dirname, './../../install/windows/source/Parluks-win32-x64');
 // outputDirectory: "C:\\Users\sdkca\Desktop\windows_installer", 
-const OUT_DIR = path.resolve(__dirname, './windows_installer');
-const ICON = path.join(__dirname, 'app.ico');
-const ICON_32 = path.join(__dirname, 'app.ico');
-const ICON_16 = path.join(__dirname, 'app.ico');
+const OUT_DIR = path.resolve(__dirname, './../../install/windows');
+const ICON = path.join(__dirname, './../../src/app.ico');
+const ICON_32 = path.join(__dirname, './../../src/app.ico');
+const ICON_16 = path.join(__dirname, './../../src/app.ico');
 const BACKGROUND = path.join(__dirname, 'background.png');
 const TOP = path.join(__dirname, 'top.png');
 

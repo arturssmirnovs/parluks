@@ -1,0 +1,18 @@
+{
+  "name": "Parluks",
+  "version": "1.0.0",
+  "build": 11,
+  "description": "Browser for developers",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "GitHub",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "electron": "^1.8.8",
+    "electron-packager": "^15.1.0",
+    "electron-winstaller": "^4.0.1",
+    "sumchecker": "^2.0.2"
+  }
+}

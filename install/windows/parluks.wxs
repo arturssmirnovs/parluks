@@ -1,0 +1,901 @@
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" 
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <!-- http://wixtoolset.org/documentation/manual/v3/xsd/wix/product.html -->
+  <Product Id="071638AB-C9CF-4E49-B01D-F28A3798CA19" 
+           UpgradeCode="8b69ad0a-b682-48dd-9b42-ca17aaafab28"
+           Name = "Parluks (Machine - MSI)"
+           Version="1.0.0.0"
+           Manufacturer="Parluks"
+           Language="1033">
+    <!-- Only run this installer on Windows 7 or up (or if it"s already installed, I guess) -->
+    <!-- <Condition Message="This application is only supported on Windows 7 or higher.">
+      <![CDATA[Installed OR (VersionNT >= 601)]]>
+    </Condition> -->
+    <!-- http://wixtoolset.org/documentation/manual/v3/xsd/wix/package.html -->
+    <Package InstallerVersion="405"
+             Compressed="yes"
+             Comments="Windows Installer Package"
+             Platform="x86"/>
+    <!-- Don't allow downgrades -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A later version of this product is already installed. Setup will now exit."/>
+    <!-- This will hide our Uninstall entry in Apps & Features. We doing this so
+    we can write our own which we can better control. -->
+    <Property Id="ARPSYSTEMCOMPONENT" Value="1" />
+    <!-- While the MSI package is hidden in Apps & Features, it can still be queried
+    via PowerShell and other means. To differentiate we give the public entry a slightly
+    different name to make admins life easier.  -->
+    <Property Id="VisibleProductName" Value="Parluks (Machine)" />
+    <!-- Signals Single Package Authoring. This pacakge can pe installed perMachine
+    or perUser. The mode is determined by the property below. -->
+    <Property Id="ALLUSERS" Secure="yes" Value="2" />
+    <!-- Tells the package to install perUser or perMachine. In case of perUser, all
+    files will be redirected to the user profile and all registry entries to HKCU. -->
+    <Property Id="MSIINSTALLPERUSER" Secure="yes" Value="0" />
+    <!-- Overides the default install mode. It solves a problem where
+    individual packaged files that have the same version as in previous
+    installed App version will be deleted if the files are in use during
+    this upgrade. Unfortunately this causes an ICE 40 warning during linking. -->
+    <Property Id="REINSTALLMODE" Value="emus" />
+    <!-- Overrides the default reboot behavior if files are in use during the upgrade.
+     This way no unpxecpted reboot will happpen.-->
+    <Property Id="REBOOT" Value="ReallySuppress" />
+    <!-- A property that holds the intall path and is needed to delete all files on
+    uninstall, even if they are not wriiten as part of this MSI. The value comes from a 
+    registry we set on install.-->
+    <Property Id="INSTALLLEVEL" Value="2" />
+    <!-- Allows to customize the Windows user group that gets access rights on
+    the install folder in cas the auto-updater is installed. User that run the App
+    must be part of that user group to be able to auto-update. -->
+    <Property Id="UPDATERUSERGROUP" Value="Users" />
+    <!-- A property to define whether the auto-updater is enabled when the
+    feature gets installed. This way the update can be installed but also be disabled
+    by overwriting the default value.  -->
+    <Property Id="AUTOUPDATEENABLED" Value="1" />
+    <!-- Necessary registry search to find the install path which is used by the
+    PurgeOnUninstall action. Since this package can be installed perUser or perMachine,
+    we have to look in both places. First successful search wins. -->
+    <Property Id="INSTALLPATH">
+      <RegistrySearch Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{071638AB-C9CF-4E49-B01D-F28A3798CA19}.msq"
+                      Root="HKCU" 
+                      Type="raw"
+                      Id="INSTALLPATH_REGSEARCH_HKCU"
+                      Name="InstallPath"
+                      Win64="no"/>
+      <RegistrySearch Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{071638AB-C9CF-4E49-B01D-F28A3798CA19}.msq"
+                      Root="HKLM" 
+                      Type="raw"
+                      Id="INSTALLPATH_REGSEARCH_HKLM"
+                      Name="InstallPath"
+                      Win64="no"/>
+    </Property>
+    <!-- Lets change the product name depending on the perUser installMode. 
+    This way the user and admins can see in which scope the MSI was installed. -->
+    <SetProperty Action="SetVisibleProductName" Id="VisibleProductName" Sequence="both" Before="AppSearch"  Value="Parluks (User)">
+      <![CDATA[MSIINSTALLPERUSER = "1"]]>
+    </SetProperty>
+    <!-- Again we give thee MSI generaten entry a slightly different name to help 
+    differentiate between the public one and the invisible one. -->
+    <SetProperty Action="SetProductName" Id="ProductName" Sequence="both" Before="AppSearch"  Value="Parluks (User - MSI)">
+      <![CDATA[MSIINSTALLPERUSER = "1"]]>
+    </SetProperty>
+
+    <Media Id="1" Cabinet="product.cab" EmbedCab="yes"/>
+
+    <UI Id="UserInterface">
+      <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+      <Property Id="WixUI_Mode" Value="FeatureTree" />
+      <DialogRef Id="ErrorDlg" />
+      <DialogRef Id="FatalError" />
+      <DialogRef Id="FilesInUse" />
+      <DialogRef Id="MsiRMFilesInUse" />
+      <DialogRef Id="PrepareDlg" />
+      <DialogRef Id="ProgressDlg" />
+      <DialogRef Id="ResumeDlg" />
+      <DialogRef Id="UserExit" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">1</Publish>
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="CustomizeDlg">NOT Installed</Publish>
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">Installed AND PATCH</Publish>
+      <Publish Dialog="CustomizeDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="1">Installed</Publish>
+      <Publish Dialog="CustomizeDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">NOT Installed</Publish>
+      <Publish Dialog="CustomizeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="CustomizeDlg" Order="1">NOT Installed OR WixUI_InstallMode = "Change"</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2">Installed AND NOT PATCH</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="3">Installed AND PATCH</Publish>
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="ChangeButton" Event="NewDialog" Value="CustomizeDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">1</Publish>
+    </UI>
+    <UIRef Id="WixUI_Common" />
+
+    <WixVariable Id="WixUIExclamationIco" Value="C:\Users\Arturs\parluks\src\app.ico" />
+    <WixVariable Id="WixUIInfoIco" Value="C:\Users\Arturs\parluks\src\app.ico" />
+    <WixVariable Id="WixUINewIco" Value="C:\Users\Arturs\parluks\src\app.ico" />
+    <WixVariable Id="WixUIBannerBmp" Value="C:\Users\Arturs\parluks\compiler\windows\top.png" />
+    <WixVariable Id="WixUIDialogBmp" Value="C:\Users\Arturs\parluks\compiler\windows\background.png" />
+    <WixVariable Id="WixUIUpIco" Value="C:\Users\Arturs\parluks\src\app.ico" />
+
+    <!-- Step 2: Add files and directories -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+       <!-- Installation files to %PROGRAMFILES% -->
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="APPLICATIONROOTDIRECTORY" Name="Parluks">
+          <Directory Id="__4b6c3c76_4a7d_4ff8_b2b0_02373d4fce50" Name="app-1.0.0">
+            <Directory Id="_locales_b77d382e_5de8_4e51_bcd9_b4e314a81c4f" Name="locales">
+              <Component Id="_locales_am.pak_213aca85_3e40_40f5_9cd4_57b323ad52bc" Guid="0b567374-6276-427b-a7d8-2a553c0dc401" Win64="no">
+                <File Name="am.pak" Id="_locales_am.pak_213aca85_3e40_40f5_9cd4_57b323ad52bc" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\am.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ar.pak_e0b5ea1c_8281_4577_ba36_59751aea3729" Guid="bedf27bf-3338-46c0-8fe7-d807a8c34dc9" Win64="no">
+                <File Name="ar.pak" Id="_locales_ar.pak_e0b5ea1c_8281_4577_ba36_59751aea3729" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\ar.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_bg.pak_c815d444_5c82_44b4_ba0e_b8fd143ad589" Guid="b633e5f5-f8c0-4bd3-935d-1792e42f678d" Win64="no">
+                <File Name="bg.pak" Id="_locales_bg.pak_c815d444_5c82_44b4_ba0e_b8fd143ad589" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\bg.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_bn.pak_ca68c818_d96a_4d0d_bb0e_7f82bb0b2d01" Guid="efce7797-1ebe-4f0b-8feb-3e9879e4b237" Win64="no">
+                <File Name="bn.pak" Id="_locales_bn.pak_ca68c818_d96a_4d0d_bb0e_7f82bb0b2d01" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\bn.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ca.pak_e15b1f49_4512_449f_a402_47eeafd9c7bf" Guid="460bea71-cef5-45a1-bf54-a6a148d49a98" Win64="no">
+                <File Name="ca.pak" Id="_locales_ca.pak_e15b1f49_4512_449f_a402_47eeafd9c7bf" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\ca.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_cs.pak_14af7926_8c6b_44e6_a241_ae68eaec4874" Guid="9f8e282e-63a3-4f99-9767-8b64d37682e9" Win64="no">
+                <File Name="cs.pak" Id="_locales_cs.pak_14af7926_8c6b_44e6_a241_ae68eaec4874" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\cs.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_da.pak_42962829_bc19_4e59_95a6_74b3a5faa730" Guid="17142cc8-64d3-448e-8848-c1f692aaad6e" Win64="no">
+                <File Name="da.pak" Id="_locales_da.pak_42962829_bc19_4e59_95a6_74b3a5faa730" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\da.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_de.pak_a7fe2e9a_89e4_43a4_941a_c6a0b52d1dd7" Guid="46dfc4af-ef2f-4f36-914c-5cea42f4c990" Win64="no">
+                <File Name="de.pak" Id="_locales_de.pak_a7fe2e9a_89e4_43a4_941a_c6a0b52d1dd7" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\de.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_el.pak_79326b00_e1a4_4dbf_b994_e3228531bdb1" Guid="616b4b89-0809-4a2b-8616-5fe0fea56649" Win64="no">
+                <File Name="el.pak" Id="_locales_el.pak_79326b00_e1a4_4dbf_b994_e3228531bdb1" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\el.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_en_GB.pak_beed53e8_4c56_4520_88bb_858bc2111781" Guid="83aba9c5-9863-4ed8-bd7b-716959818cb8" Win64="no">
+                <File Name="en-GB.pak" Id="_locales_en_GB.pak_beed53e8_4c56_4520_88bb_858bc2111781" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\en-GB.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_en_US.pak_fa2c98d2_0491_4814_9ade_7d163d7fa96b" Guid="b535d309-2cd7-4011-86f5-18119138a76b" Win64="no">
+                <File Name="en-US.pak" Id="_locales_en_US.pak_fa2c98d2_0491_4814_9ade_7d163d7fa96b" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\en-US.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_es_419.pak_d1ad52c5_74a3_4b66_b5c5_8850b1267170" Guid="2b92080e-87e7-418a-96e7-3a1bb0e8088d" Win64="no">
+                <File Name="es-419.pak" Id="_locales_es_419.pak_d1ad52c5_74a3_4b66_b5c5_8850b1267170" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\es-419.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_es.pak_bb16e917_3430_44a8_97d0_2b9e8f94ee2a" Guid="8718c197-4b85-4526-bf7d-7a6d2af8b94b" Win64="no">
+                <File Name="es.pak" Id="_locales_es.pak_bb16e917_3430_44a8_97d0_2b9e8f94ee2a" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\es.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_et.pak_829e88b7_31a2_48b8_b95e_48e29afd043b" Guid="619cd286-13b1-4500-8efd-a66d8ee3fb03" Win64="no">
+                <File Name="et.pak" Id="_locales_et.pak_829e88b7_31a2_48b8_b95e_48e29afd043b" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\et.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_fa.pak_2f0222c3_029e_4296_aec9_75495ffb1293" Guid="31445109-54eb-4cc9-8923-7f7f4deccf4b" Win64="no">
+                <File Name="fa.pak" Id="_locales_fa.pak_2f0222c3_029e_4296_aec9_75495ffb1293" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\fa.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_fake_bidi.pak_6dc7e86f_30a2_47bb_8abe_a21d937d6e3e" Guid="67fe82dd-23bb-466c-9042-832385cc8b0a" Win64="no">
+                <File Name="fake-bidi.pak" Id="_locales_fake_bidi.pak_6dc7e86f_30a2_47bb_8abe_a21d937d6e3e" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\fake-bidi.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_fi.pak_24a81df2_f6ac_409d_98af_fe84ebb7ed65" Guid="2324a12a-f024-4d5a-afa1-12b3c822808c" Win64="no">
+                <File Name="fi.pak" Id="_locales_fi.pak_24a81df2_f6ac_409d_98af_fe84ebb7ed65" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\fi.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_fil.pak_1b225516_ffa2_4f2c_935f_73455acd04bf" Guid="cd4df5c2-312f-4ae4-9302-c0b8f196297e" Win64="no">
+                <File Name="fil.pak" Id="_locales_fil.pak_1b225516_ffa2_4f2c_935f_73455acd04bf" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\fil.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_fr.pak_6825794e_71a6_4531_b54a_c31e18fd7dbe" Guid="3e959cad-a941-45d3-96c2-d38c5fa8badc" Win64="no">
+                <File Name="fr.pak" Id="_locales_fr.pak_6825794e_71a6_4531_b54a_c31e18fd7dbe" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\fr.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_gu.pak_bec61af3_e420_469f_a30a_c002e9ee872c" Guid="5073bfee-66b0-4d0c-8623-751844ae6da2" Win64="no">
+                <File Name="gu.pak" Id="_locales_gu.pak_bec61af3_e420_469f_a30a_c002e9ee872c" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\gu.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_he.pak_a6364fd8_2d5f_4067_9dfe_12954c4fdfd7" Guid="a0ae5774-710b-445d-9cd7-29714ff915ac" Win64="no">
+                <File Name="he.pak" Id="_locales_he.pak_a6364fd8_2d5f_4067_9dfe_12954c4fdfd7" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\he.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_hi.pak_3ec6cfeb_7e38_43ea_a7f7_a9cc90aadf7d" Guid="05183f5b-9de4-48e2-a5dd-4a4b8943ec6f" Win64="no">
+                <File Name="hi.pak" Id="_locales_hi.pak_3ec6cfeb_7e38_43ea_a7f7_a9cc90aadf7d" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\hi.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_hr.pak_fb52a242_cfcc_44fb_87bc_48fc9880b7a1" Guid="5c6aaf14-7dc2-43bb-b855-dff79a35f6bc" Win64="no">
+                <File Name="hr.pak" Id="_locales_hr.pak_fb52a242_cfcc_44fb_87bc_48fc9880b7a1" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\hr.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_hu.pak_13b2754c_a247_4541_982d_f435651016c9" Guid="a01f91ef-9d9a-4163-a48e-afd5097aff95" Win64="no">
+                <File Name="hu.pak" Id="_locales_hu.pak_13b2754c_a247_4541_982d_f435651016c9" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\hu.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_id.pak_4a4097ca_48d2_43bf_ac17_9c1984bdbe08" Guid="ebe00a9f-4be4-42b4-ad70-087b41b600d6" Win64="no">
+                <File Name="id.pak" Id="_locales_id.pak_4a4097ca_48d2_43bf_ac17_9c1984bdbe08" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\id.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_it.pak_3f992e85_ee4d_4269_bb1b_045d79a774e4" Guid="fd641ca9-1d22-4039-9b88-af1157d28526" Win64="no">
+                <File Name="it.pak" Id="_locales_it.pak_3f992e85_ee4d_4269_bb1b_045d79a774e4" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\it.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ja.pak_e5ebfaea_d436_40fd_8c53_0ffad34a1838" Guid="45e9e89c-3d86-481d-af47-46266d86e597" Win64="no">
+                <File Name="ja.pak" Id="_locales_ja.pak_e5ebfaea_d436_40fd_8c53_0ffad34a1838" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\ja.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_kn.pak_6af76589_e1ca_4bb3_8ab0_03f615565e80" Guid="b3dda24e-c550-4490-b901-537c2446a62e" Win64="no">
+                <File Name="kn.pak" Id="_locales_kn.pak_6af76589_e1ca_4bb3_8ab0_03f615565e80" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\kn.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ko.pak_4b6aabb6_26c2_4a4e_9d6b_637a9d9762c9" Guid="31946119-55d9-4ba5-8ec0-e23b798dc43a" Win64="no">
+                <File Name="ko.pak" Id="_locales_ko.pak_4b6aabb6_26c2_4a4e_9d6b_637a9d9762c9" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\ko.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_lt.pak_8b924858_f653_4232_8a03_333a121cb61e" Guid="883e581b-6eaa-48b6-8042-c25c8d621dce" Win64="no">
+                <File Name="lt.pak" Id="_locales_lt.pak_8b924858_f653_4232_8a03_333a121cb61e" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\lt.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_lv.pak_a6b8e61f_bce1_4a1a_9390_c1e70bfafce5" Guid="7775df63-6b65-4138-a604-3fa0f6431550" Win64="no">
+                <File Name="lv.pak" Id="_locales_lv.pak_a6b8e61f_bce1_4a1a_9390_c1e70bfafce5" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\lv.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ml.pak_3d7a0105_f858_4afd_af65_92c906ad9dad" Guid="d0842d5e-d364-4036-b87b-eba6eae16794" Win64="no">
+                <File Name="ml.pak" Id="_locales_ml.pak_3d7a0105_f858_4afd_af65_92c906ad9dad" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\ml.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_mr.pak_617fd591_c8da_413e_92df_eb0e2b83d533" Guid="cb0e1641-40c2-4eb9-b990-af9e7939dd3d" Win64="no">
+                <File Name="mr.pak" Id="_locales_mr.pak_617fd591_c8da_413e_92df_eb0e2b83d533" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\mr.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ms.pak_00174a91_7d7d_4e3b_9d61_cec94f54e504" Guid="865dd161-c0b8-4dd7-8e1e-fdbe27121d46" Win64="no">
+                <File Name="ms.pak" Id="_locales_ms.pak_00174a91_7d7d_4e3b_9d61_cec94f54e504" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\ms.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_nb.pak_4309f433_fa14_407b_a7d6_7b1573fa3684" Guid="9f94cb74-a245-424f-b738-1e2f5c7aec24" Win64="no">
+                <File Name="nb.pak" Id="_locales_nb.pak_4309f433_fa14_407b_a7d6_7b1573fa3684" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\nb.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_nl.pak_4538ca11_e58a_4d3a_8b35_3057670c8395" Guid="80aa4f43-14a2-41f9-81c3-ce83bdf7de10" Win64="no">
+                <File Name="nl.pak" Id="_locales_nl.pak_4538ca11_e58a_4d3a_8b35_3057670c8395" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\nl.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_pl.pak_32f3e30a_4079_4f10_8440_0b98deda6280" Guid="01f2fda3-ca14-404e-882a-0bb8c2faa51e" Win64="no">
+                <File Name="pl.pak" Id="_locales_pl.pak_32f3e30a_4079_4f10_8440_0b98deda6280" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\pl.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_pt_BR.pak_ddc927c0_8cc3_48db_aeac_dac541bd4fa8" Guid="066b0b60-af58-42f0-a778-39a393efc70c" Win64="no">
+                <File Name="pt-BR.pak" Id="_locales_pt_BR.pak_ddc927c0_8cc3_48db_aeac_dac541bd4fa8" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\pt-BR.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_pt_PT.pak_cadc8ce3_c65f_4a53_ae3a_77f67d3857d9" Guid="06f863a6-38b6-49bc-8afd-95715a42d87f" Win64="no">
+                <File Name="pt-PT.pak" Id="_locales_pt_PT.pak_cadc8ce3_c65f_4a53_ae3a_77f67d3857d9" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\pt-PT.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ro.pak_1e19559e_8d08_4e12_ba8e_7683b64622b3" Guid="99494ab7-3582-4b3d-a868-33faee99f06e" Win64="no">
+                <File Name="ro.pak" Id="_locales_ro.pak_1e19559e_8d08_4e12_ba8e_7683b64622b3" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\ro.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ru.pak_00929d81_84d6_4001_8489_bb888229bb90" Guid="33c0330e-1b47-49ce-b42f-d33a768d4ceb" Win64="no">
+                <File Name="ru.pak" Id="_locales_ru.pak_00929d81_84d6_4001_8489_bb888229bb90" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\ru.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_sk.pak_943fa041_3bfe_45d4_aceb_7d6867312364" Guid="473a0bf7-91ec-4099-857a-4cae0f1ea9eb" Win64="no">
+                <File Name="sk.pak" Id="_locales_sk.pak_943fa041_3bfe_45d4_aceb_7d6867312364" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\sk.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_sl.pak_07922b26_91d3_4bca_a511_8743f640f104" Guid="15d75172-22c6-485b-a013-54180065064e" Win64="no">
+                <File Name="sl.pak" Id="_locales_sl.pak_07922b26_91d3_4bca_a511_8743f640f104" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\sl.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_sr.pak_1a17c1c6_d4db_4db4_8211_51fc888a54bb" Guid="9836ab8e-56da-4a90-bb08-375e9000353a" Win64="no">
+                <File Name="sr.pak" Id="_locales_sr.pak_1a17c1c6_d4db_4db4_8211_51fc888a54bb" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\sr.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_sv.pak_74a7ede8_bfb0_4e1f_997b_9965a18b908b" Guid="c244071f-f749-4f18-b027-267d388e36b6" Win64="no">
+                <File Name="sv.pak" Id="_locales_sv.pak_74a7ede8_bfb0_4e1f_997b_9965a18b908b" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\sv.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_sw.pak_2142f625_e464_4c52_a568_d66b42609864" Guid="3b650354-d6f9-4d4d-aeed-f8479d318955" Win64="no">
+                <File Name="sw.pak" Id="_locales_sw.pak_2142f625_e464_4c52_a568_d66b42609864" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\sw.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ta.pak_c68a9b34_7550_4c0d_a0cf_f4b212eb8d4f" Guid="cdd1974a-44b3-491e-9b23-549b1113a0a4" Win64="no">
+                <File Name="ta.pak" Id="_locales_ta.pak_c68a9b34_7550_4c0d_a0cf_f4b212eb8d4f" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\ta.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_te.pak_ad8a193d_3044_4f4d_a716_16e805cb55a8" Guid="92ac1c5b-597e-4738-aa36-a99902dd0de4" Win64="no">
+                <File Name="te.pak" Id="_locales_te.pak_ad8a193d_3044_4f4d_a716_16e805cb55a8" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\te.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_th.pak_4c06819a_7798_4b91_9121_5159aee668c0" Guid="c098bcaf-89cd-4568-b50b-bec4826099a7" Win64="no">
+                <File Name="th.pak" Id="_locales_th.pak_4c06819a_7798_4b91_9121_5159aee668c0" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\th.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_tr.pak_433c09dd_4df7_43fb_93c4_9f0cef840ebb" Guid="537ff776-0d97-4fdb-aa20-9ebbbd3c5c80" Win64="no">
+                <File Name="tr.pak" Id="_locales_tr.pak_433c09dd_4df7_43fb_93c4_9f0cef840ebb" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\tr.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_uk.pak_8115278f_3c4e_474b_8a42_71fadea699c6" Guid="771c4abb-2e78-4c0e-9552-a3b65fdbbc41" Win64="no">
+                <File Name="uk.pak" Id="_locales_uk.pak_8115278f_3c4e_474b_8a42_71fadea699c6" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\uk.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_vi.pak_d43f4d27_6d4a_4bba_8a0b_9d3c403062f6" Guid="b0af3c60-404c-4df1-8e8e-b4fd5201b8da" Win64="no">
+                <File Name="vi.pak" Id="_locales_vi.pak_d43f4d27_6d4a_4bba_8a0b_9d3c403062f6" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\vi.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_zh_CN.pak_195ff350_5c0d_4f0c_a076_4d78f520933e" Guid="e2dc2035-ebc0-4df4-a3f1-1eb7f50ccfac" Win64="no">
+                <File Name="zh-CN.pak" Id="_locales_zh_CN.pak_195ff350_5c0d_4f0c_a076_4d78f520933e" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\zh-CN.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_zh_TW.pak_f9f80be8_89c7_47c7_b2bb_971290886382" Guid="6c2a6039-b6f9-4f55-bc6b-400ebf6c5cb0" Win64="no">
+                <File Name="zh-TW.pak" Id="_locales_zh_TW.pak_f9f80be8_89c7_47c7_b2bb_971290886382" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\locales\zh-TW.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+            </Directory>
+            <Directory Id="_resources_d6e4e9d9_6c94_4824_a6ec_ce84866899ac" Name="resources">
+              <Directory Id="_resources_app_d816f5a1_1a6c_40da_8ab4_46cacf4ce175" Name="app">
+                <Directory Id="_resources_app_css_1bc7f4df_d630_475b_920c_9d75acb02793" Name="css">
+                  <Component Id="_boomerang_startup_analitycs.min.cs_8a7c35d5_c1b3_4c5a_b1f0_0a48d0e3c4bc" Guid="614d0d1c-2d93-470f-b971-c90c49db7766" Win64="no">
+                    <File Name="boomerang-startup-analitycs.min.css" Id="_boomerang_startup_analitycs.min.cs_8a7c35d5_c1b3_4c5a_b1f0_0a48d0e3c4bc" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\css\boomerang-startup-analitycs.min.css" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_css_boostrap.css_d8205407_b64e_4d0d_ab77_a14f35376d1a" Guid="1f4a1992-4892-4b04-8d3f-1188818e41ba" Win64="no">
+                    <File Name="boostrap.css" Id="_resources_app_css_boostrap.css_d8205407_b64e_4d0d_ab77_a14f35376d1a" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\css\boostrap.css" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_css_index.css_23489b2c_1baa_4bff_80bf_1b128ad06dce" Guid="1610655c-53f3-4364-a634-5e643cbf4cc2" Win64="no">
+                    <File Name="index.css" Id="_resources_app_css_index.css_23489b2c_1baa_4bff_80bf_1b128ad06dce" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\css\index.css" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                </Directory>
+                <Directory Id="_resources_app_images_55be9ac9_a5b7_4ed3_b010_80bcb6d2fbe9" Name="images">
+                  <Component Id="_background.svg_e69a58e6_1a39_4c5d_b79a_a3f617b9bb40" Guid="6c6ed1da-4022-42c2-ba6c-b4cf8d9ac495" Win64="no">
+                    <File Name="background.svg" Id="_background.svg_e69a58e6_1a39_4c5d_b79a_a3f617b9bb40" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\background.svg" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_camera.svg_82a0dc8b_c4ab_4ed5_8741_830909bdd7f9" Guid="a6a1a96f-8101-418c-9880-efa214325e9a" Win64="no">
+                    <File Name="camera.svg" Id="_resources_app_images_camera.svg_82a0dc8b_c4ab_4ed5_8741_830909bdd7f9" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\camera.svg" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_cog.svg_661afa49_3c06_4dea_83dc_cb59bc870d49" Guid="f990c16b-baf5-4a24-a911-ad748fda76e4" Win64="no">
+                    <File Name="cog.svg" Id="_resources_app_images_cog.svg_661afa49_3c06_4dea_83dc_cb59bc870d49" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\cog.svg" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_device.svg_79f9030a_e25e_438b_bd33_7a58d11ed157" Guid="229f9d3d-b808-4f60-a807-9b4dfac9d896" Win64="no">
+                    <File Name="device.svg" Id="_resources_app_images_device.svg_79f9030a_e25e_438b_bd33_7a58d11ed157" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\device.svg" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_donate.svg_40b24c0e_f181_4427_9b32_57e2bf57dde1" Guid="7c45bfd5-f209-41cf-a4cd-4c9cf64621c6" Win64="no">
+                    <File Name="donate.svg" Id="_resources_app_images_donate.svg_40b24c0e_f181_4427_9b32_57e2bf57dde1" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\donate.svg" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_icon.ico_bd4de7f9_1f55_4b9a_b4ca_78afb54a88fe" Guid="365bfc54-9f9f-4573-9ba7-651f0e50c7d1" Win64="no">
+                    <File Name="icon.ico" Id="_resources_app_images_icon.ico_bd4de7f9_1f55_4b9a_b4ca_78afb54a88fe" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\icon.ico" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_icon.png_8961ea43_aa89_4862_9f08_c4192ff9fedf" Guid="1dd9dbca-b256-4da6-bcd1-6f43d93cd5d2" Win64="no">
+                    <File Name="icon.png" Id="_resources_app_images_icon.png_8961ea43_aa89_4862_9f08_c4192ff9fedf" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\icon.png" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_icon_16.ico_b936f1c6_dd43_4153_afc9_a91558e9ac10" Guid="1f4678ff-c420-45cf-a646-644ab5fcf91f" Win64="no">
+                    <File Name="icon_16.ico" Id="_resources_app_images_icon_16.ico_b936f1c6_dd43_4153_afc9_a91558e9ac10" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\icon_16.ico" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_icon_16.png_2bd2a7af_d627_4ed7_91ad_2ec9c7307028" Guid="c26545da-53e1-4ec6-81bc-24c30d12f43b" Win64="no">
+                    <File Name="icon_16.png" Id="_resources_app_images_icon_16.png_2bd2a7af_d627_4ed7_91ad_2ec9c7307028" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\icon_16.png" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_icon_32.ico_c11bc77b_de5d_4e77_b84a_1d65c1764986" Guid="9efa60f1-b509-405c-9fa8-7c686c0673da" Win64="no">
+                    <File Name="icon_32.ico" Id="_resources_app_images_icon_32.ico_c11bc77b_de5d_4e77_b84a_1d65c1764986" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\icon_32.ico" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_icon_32.png_f6a5ebdd_1375_42fb_8571_30ee637e1471" Guid="9a94b39f-b3f2-4a0b-9440-129459f52751" Win64="no">
+                    <File Name="icon_32.png" Id="_resources_app_images_icon_32.png_f6a5ebdd_1375_42fb_8571_30ee637e1471" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\icon_32.png" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_laptop_rotated.png_3ce7df7d_2770_4c3c_8b5b_655929ef16a8" Guid="c09d2962-74e9-4ce7-b572-b99bd206d7c2" Win64="no">
+                    <File Name="laptop-rotated.png" Id="_laptop_rotated.png_3ce7df7d_2770_4c3c_8b5b_655929ef16a8" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\laptop-rotated.png" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_laptop.png_e0d24d20_415a_45de_ad9b_6b2592051c0e" Guid="8be3513c-84ee-40d4-b6be-0812249d5f87" Win64="no">
+                    <File Name="laptop.png" Id="_resources_app_images_laptop.png_e0d24d20_415a_45de_ad9b_6b2592051c0e" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\laptop.png" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_left.svg_53350089_5de8_426d_80b1_217cac1fdc36" Guid="1f174622-2434-4ecd-98af-b2fa4b43a812" Win64="no">
+                    <File Name="left.svg" Id="_resources_app_images_left.svg_53350089_5de8_426d_80b1_217cac1fdc36" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\left.svg" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_logo.png_dfb926bc_d3f0_4a96_9373_7d37545530fa" Guid="adcb0d2e-2f37-4094-93c0-87224585bda1" Win64="no">
+                    <File Name="logo.png" Id="_resources_app_images_logo.png_dfb926bc_d3f0_4a96_9373_7d37545530fa" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\logo.png" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_phone_rotated.png_4774ede4_e0b1_4df4_80fd_48f1854e8f2f" Guid="b18080f1-9bd6-4b5b-99f5-f07d6b801442" Win64="no">
+                    <File Name="phone-rotated.png" Id="_phone_rotated.png_4774ede4_e0b1_4df4_80fd_48f1854e8f2f" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\phone-rotated.png" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_phone.png_3ae2697b_a513_4561_8b56_47654be4e0ac" Guid="f042d287-b4f8-4649-a17a-cd964d801de3" Win64="no">
+                    <File Name="phone.png" Id="_resources_app_images_phone.png_3ae2697b_a513_4561_8b56_47654be4e0ac" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\phone.png" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_refresh.svg_e1d68d31_ef12_4fb2_ba3c_7c6be50d47fd" Guid="526232f4-f263-4e46-ae2d-dca6f6707886" Win64="no">
+                    <File Name="refresh.svg" Id="_resources_app_images_refresh.svg_e1d68d31_ef12_4fb2_ba3c_7c6be50d47fd" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\refresh.svg" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_right.svg_86eabe99_2493_4f88_956f_4f60b7278fd5" Guid="0ea5c811-b7d0-43dd-938e-6e9c9e612ed6" Win64="no">
+                    <File Name="right.svg" Id="_resources_app_images_right.svg_86eabe99_2493_4f88_956f_4f60b7278fd5" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\right.svg" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_search.svg_215cc7cf_a3af_4162_9a18_ae3266b6ff50" Guid="b236fe0d-3f83-45d3-aeed-d7efae0ded3c" Win64="no">
+                    <File Name="search.svg" Id="_resources_app_images_search.svg_215cc7cf_a3af_4162_9a18_ae3266b6ff50" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\search.svg" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_settings.svg_3065db59_06fc_4a46_89a4_0373d3d9a642" Guid="d5cb1a39-d88e-4db3-85f3-b61f8019180f" Win64="no">
+                    <File Name="settings.svg" Id="_resources_app_images_settings.svg_3065db59_06fc_4a46_89a4_0373d3d9a642" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\settings.svg" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_tablet_rotated.png_83f3f14e_7d99_4e8c_9ad4_ec04f1d7af18" Guid="06d9c97f-ad1d-42e8-817d-67fce7588ab7" Win64="no">
+                    <File Name="tablet-rotated.png" Id="_tablet_rotated.png_83f3f14e_7d99_4e8c_9ad4_ec04f1d7af18" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\tablet-rotated.png" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_tablet.png_77fffdb4_6334_49db_8329_05a2c93c2a68" Guid="cc612029-47e0-4d90-81cd-5ecab5130727" Win64="no">
+                    <File Name="tablet.png" Id="_resources_app_images_tablet.png_77fffdb4_6334_49db_8329_05a2c93c2a68" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\tablet.png" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_tv_rotated.png_34e43dbb_428f_4db3_bf7f_e0498eb2582b" Guid="2e9a1561-616e-4f73-bb93-3ca3eec4029b" Win64="no">
+                    <File Name="tv-rotated.png" Id="_tv_rotated.png_34e43dbb_428f_4db3_bf7f_e0498eb2582b" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\tv-rotated.png" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_tv.png_70539a67_f248_465d_88a9_35053b37309d" Guid="7c929a58-8ab4-4913-95cf-7b8323a07091" Win64="no">
+                    <File Name="tv.png" Id="_resources_app_images_tv.png_70539a67_f248_465d_88a9_35053b37309d" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\tv.png" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_website.svg_4df7b4bd_a71a_40a8_ae11_0a51ffbeddc3" Guid="d1857dc7-e571-47ec-8c3f-e31e76f6d913" Win64="no">
+                    <File Name="website.svg" Id="_resources_app_images_website.svg_4df7b4bd_a71a_40a8_ae11_0a51ffbeddc3" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\website.svg" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_images_zoom.svg_b78bbf52_9815_4e3a_989c_8bbb8402ad54" Guid="d8a858f7-9c65-4de7-9cc2-ea590dc1d161" Win64="no">
+                    <File Name="zoom.svg" Id="_resources_app_images_zoom.svg_b78bbf52_9815_4e3a_989c_8bbb8402ad54" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\images\zoom.svg" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                </Directory>
+                <Directory Id="_resources_app_js_3a6208fa_8ffb_4022_8f1e_da4559683a31" Name="js">
+                  <Component Id="_resources_app_js_app.js_38e5c15a_b165_4176_91d3_efca94b73c6f" Guid="8f7daf63-ca9f-44ce-bc1a-c14953907fbd" Win64="no">
+                    <File Name="app.js" Id="_resources_app_js_app.js_38e5c15a_b165_4176_91d3_efca94b73c6f" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\js\app.js" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_js_device.js_5f1400d9_0d6e_4ce3_9a7c_f4d44fabfe80" Guid="1c903a11-8c97-48a7-96a5-65b94ec7b06a" Win64="no">
+                    <File Name="device.js" Id="_resources_app_js_device.js_5f1400d9_0d6e_4ce3_9a7c_f4d44fabfe80" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\js\device.js" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_js_preload.js_ad153ec2_33d5_4e18_be6d_58e530a92f69" Guid="8a600fd8-d218-4fa3-9dfc-12213b83fc68" Win64="no">
+                    <File Name="preload.js" Id="_resources_app_js_preload.js_ad153ec2_33d5_4e18_be6d_58e530a92f69" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\js\preload.js" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                  <Component Id="_resources_app_js_store.js_8b3a157a_167b_4e21_bb55_1162dd4e9ca0" Guid="10ed8517-5db0-4046-8ba1-d2d4988e6137" Win64="no">
+                    <File Name="store.js" Id="_resources_app_js_store.js_8b3a157a_167b_4e21_bb55_1162dd4e9ca0" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\js\store.js" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                  </Component>
+                </Directory>
+                <Directory Id="_resources_app_node_modules_2b9c6685_b1fc_419d_b722_0ea17a6e00dd" Name="node_modules">
+                  <Directory Id="__electron_075e8eea_0ffe_4207_bc6c_709cb11a9660" Name="@electron">
+
+                  </Directory>
+                  <Directory Id="__sindresorhus_fdf0aa89_8627_40cb_9f1d_7e59c1d9a1e1" Name="@sindresorhus">
+
+                  </Directory>
+                  <Directory Id="__szmarczak_7bbf3399_0ca5_4ceb_a291_8886371f078e" Name="@szmarczak">
+
+                  </Directory>
+                  <Directory Id="_resources_app_node_modules__types_f4133f44_f697_4aac_97fd_14b7055113c9" Name="@types">
+
+                  </Directory>
+                </Directory>
+                <Component Id="_resources_app_LICENSE_a34d882c_23aa_4767_a6df_ce7c70fa58b7" Guid="d198304f-efd2-4069-81fa-dfad7354130f" Win64="no">
+                  <File Name="LICENSE" Id="_resources_app_LICENSE_a34d882c_23aa_4767_a6df_ce7c70fa58b7" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\LICENSE" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                </Component>
+                <Component Id="_resources_app_README.md_4a734939_0a96_4f7f_9286_e3398641cefe" Guid="118a75cb-5460-494c-a5a7-90ea58b2278f" Win64="no">
+                  <File Name="README.md" Id="_resources_app_README.md_4a734939_0a96_4f7f_9286_e3398641cefe" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\README.md" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                </Component>
+                <Component Id="_resources_app_app.ico_684e2b1e_f126_449c_a45f_280428e85aeb" Guid="2e3b17b3-4da6-43d2-bef4-4068165ec64a" Win64="no">
+                  <File Name="app.ico" Id="_resources_app_app.ico_684e2b1e_f126_449c_a45f_280428e85aeb" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\app.ico" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                </Component>
+                <Component Id="_resources_app_icon_32.icns_fbeb9157_b746_40f6_b634_4096e2c4f2a6" Guid="6c0be308-4026-4e99-bcfe-41f455af1285" Win64="no">
+                  <File Name="icon_32.icns" Id="_resources_app_icon_32.icns_fbeb9157_b746_40f6_b634_4096e2c4f2a6" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\icon_32.icns" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                </Component>
+                <Component Id="_resources_app_index.html_d0fc5b4c_516d_4e3e_a1f8_29a086c4340a" Guid="7a191698-8394-4124-8ed3-ae4432e71433" Win64="no">
+                  <File Name="index.html" Id="_resources_app_index.html_d0fc5b4c_516d_4e3e_a1f8_29a086c4340a" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\index.html" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                </Component>
+                <Component Id="_resources_app_main.js_1e81b55e_4532_4404_b412_1f167b593f44" Guid="f8c327e7-0f21-44d6-8d49-736e974377e8" Win64="no">
+                  <File Name="main.js" Id="_resources_app_main.js_1e81b55e_4532_4404_b412_1f167b593f44" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\main.js" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                </Component>
+                <Component Id="_resources_app_package.json_2b07c731_ac82_4ef6_ae0c_93992a3862fb" Guid="36b49059-8e5e-41a7-9d34-e6069fdd5850" Win64="no">
+                  <File Name="package.json" Id="_resources_app_package.json_2b07c731_ac82_4ef6_ae0c_93992a3862fb" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\app\package.json" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+                </Component>
+              </Directory>
+              <Component Id="_resources_electron.asar_7325f5ad_af1c_410d_855c_ac6cf4c3fc66" Guid="6f394824-4e48-4d5b-9aa7-1c0b2f198ada" Win64="no">
+                <File Name="electron.asar" Id="_resources_electron.asar_7325f5ad_af1c_410d_855c_ac6cf4c3fc66" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\resources\electron.asar" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+            </Directory>
+            <Component Id="_LICENSE_54279c15_03fe_4fb9_9bf2_55ab9a17d32e" Guid="cb1f944e-92ed-43a2-bee8-1967fa10e314" Win64="no">
+              <File Name="LICENSE" Id="_LICENSE_54279c15_03fe_4fb9_9bf2_55ab9a17d32e" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\LICENSE" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_LICENSES.chromium.html_784cf166_633b_45e8_8e07_cc8d3df21d31" Guid="d6f7800c-66ad-46dc-bed1-7ffe337fb0f9" Win64="no">
+              <File Name="LICENSES.chromium.html" Id="_LICENSES.chromium.html_784cf166_633b_45e8_8e07_cc8d3df21d31" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\LICENSES.chromium.html" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_Parluks.exe_8155ff29_3398_4bcf_a8fa_39d3642e531b" Guid="1055478b-72de-4cec-947c-07b48c511b28" Win64="no">
+              <File Name="Parluks.exe" Id="_Parluks.exe_8155ff29_3398_4bcf_a8fa_39d3642e531b" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\Parluks.exe" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_console_l1_1_0.dll_89348973_9841_4c05_a466_8d031ab9dc22" Guid="662cca67-4c07-4ca0-8873-6213439cf0ee" Win64="no">
+              <File Name="api-ms-win-core-console-l1-1-0.dll" Id="_api_ms_win_core_console_l1_1_0.dll_89348973_9841_4c05_a466_8d031ab9dc22" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-console-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_datetime_l1_1_0.dl_9278ec40_3acb_426a_80c4_728ff261e564" Guid="42610034-64bc-4736-b205-60876a083fe7" Win64="no">
+              <File Name="api-ms-win-core-datetime-l1-1-0.dll" Id="_api_ms_win_core_datetime_l1_1_0.dl_9278ec40_3acb_426a_80c4_728ff261e564" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-datetime-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_debug_l1_1_0.dll_855f43c0_c789_469c_a8bc_f545de9afc0c" Guid="eb10af69-45d1-4770-9bdb-7255dcb92140" Win64="no">
+              <File Name="api-ms-win-core-debug-l1-1-0.dll" Id="_api_ms_win_core_debug_l1_1_0.dll_855f43c0_c789_469c_a8bc_f545de9afc0c" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-debug-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_errorhandling_l1_1_39be856d_d56a_4aa7_9697_d6d7a1ecff6d" Guid="4f1b6812-be73-47f0-800d-e500ac50da65" Win64="no">
+              <File Name="api-ms-win-core-errorhandling-l1-1-0.dll" Id="_api_ms_win_core_errorhandling_l1_1_39be856d_d56a_4aa7_9697_d6d7a1ecff6d" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-errorhandling-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_file_l1_1_0.dll_f7521fc5_0714_446d_8359_1b501dec017e" Guid="3edcada4-9fa9-4538-9ff7-2d645f90f6a4" Win64="no">
+              <File Name="api-ms-win-core-file-l1-1-0.dll" Id="_api_ms_win_core_file_l1_1_0.dll_f7521fc5_0714_446d_8359_1b501dec017e" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-file-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_file_l1_2_0.dll_84677836_8d2d_4a2e_ab1d_9d61a560ba2b" Guid="f1179fdf-a03c-4b85-afae-ab3ddee3a41b" Win64="no">
+              <File Name="api-ms-win-core-file-l1-2-0.dll" Id="_api_ms_win_core_file_l1_2_0.dll_84677836_8d2d_4a2e_ab1d_9d61a560ba2b" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-file-l1-2-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_file_l2_1_0.dll_b3db8a9b_a42b_4d17_b2ca_c20dec661e20" Guid="425763aa-e974-40f0-bfe6-1357b7de7966" Win64="no">
+              <File Name="api-ms-win-core-file-l2-1-0.dll" Id="_api_ms_win_core_file_l2_1_0.dll_b3db8a9b_a42b_4d17_b2ca_c20dec661e20" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-file-l2-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_handle_l1_1_0.dll_d73df95e_3941_47cb_a456_15367871bf7f" Guid="5b34a26f-7470-4420-acf0-3430fe29ab3f" Win64="no">
+              <File Name="api-ms-win-core-handle-l1-1-0.dll" Id="_api_ms_win_core_handle_l1_1_0.dll_d73df95e_3941_47cb_a456_15367871bf7f" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-handle-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_heap_l1_1_0.dll_c3c3fc63_3579_42f0_9ec1_fab58908be77" Guid="cae1bbd9-9d7e-45c1-b4ef-5aae5c0e04bb" Win64="no">
+              <File Name="api-ms-win-core-heap-l1-1-0.dll" Id="_api_ms_win_core_heap_l1_1_0.dll_c3c3fc63_3579_42f0_9ec1_fab58908be77" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-heap-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_interlocked_l1_1_0_d37566e6_3de1_406d_bcac_08a0a88e33a3" Guid="86bee6d3-35e9-405e-ae89-763f4066f05c" Win64="no">
+              <File Name="api-ms-win-core-interlocked-l1-1-0.dll" Id="_api_ms_win_core_interlocked_l1_1_0_d37566e6_3de1_406d_bcac_08a0a88e33a3" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-interlocked-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_libraryloader_l1_1_7440658b_ba30_4b66_ad64_6c7426e81e5a" Guid="45ba03cf-6ef5-48af-a94f-546cb7090fc7" Win64="no">
+              <File Name="api-ms-win-core-libraryloader-l1-1-0.dll" Id="_api_ms_win_core_libraryloader_l1_1_7440658b_ba30_4b66_ad64_6c7426e81e5a" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-libraryloader-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_localization_l1_2__af08abbd_6543_4c8f_8ae2_b974e7ab699e" Guid="21a7165e-ad19-4a7e-b3ff-c930fab83f88" Win64="no">
+              <File Name="api-ms-win-core-localization-l1-2-0.dll" Id="_api_ms_win_core_localization_l1_2__af08abbd_6543_4c8f_8ae2_b974e7ab699e" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-localization-l1-2-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_memory_l1_1_0.dll_8f625119_3cd5_4272_b3d9_110519b86b87" Guid="4a50dd41-39cb-4f61-9708-d2284bfe5ba6" Win64="no">
+              <File Name="api-ms-win-core-memory-l1-1-0.dll" Id="_api_ms_win_core_memory_l1_1_0.dll_8f625119_3cd5_4272_b3d9_110519b86b87" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-memory-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_namedpipe_l1_1_0.d_1b3d5658_162d_4d98_9828_203f6c1f7e6b" Guid="3bd6f689-c9d6-4b93-ad8c-f0a2f01a2339" Win64="no">
+              <File Name="api-ms-win-core-namedpipe-l1-1-0.dll" Id="_api_ms_win_core_namedpipe_l1_1_0.d_1b3d5658_162d_4d98_9828_203f6c1f7e6b" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-namedpipe-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_processenvironment_4c35a811_d011_4704_869d_0200a7b5956d" Guid="ae440c49-74b9-41dc-8517-1fcdbc27aedc" Win64="no">
+              <File Name="api-ms-win-core-processenvironment-l1-1-0.dll" Id="_api_ms_win_core_processenvironment_4c35a811_d011_4704_869d_0200a7b5956d" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-processenvironment-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_processthreads_l1__4367aadf_5839_495c_b4b8_0b0515b409e9" Guid="052f5778-e291-45f1-b8d8-bba8e4341abe" Win64="no">
+              <File Name="api-ms-win-core-processthreads-l1-1-0.dll" Id="_api_ms_win_core_processthreads_l1__4367aadf_5839_495c_b4b8_0b0515b409e9" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-processthreads-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_processthreads_l1__3a24025c_08f9_4d11_9ea0_bbb5a94237ce" Guid="381fb57f-d5dc-4994-8a58-5e10776bf503" Win64="no">
+              <File Name="api-ms-win-core-processthreads-l1-1-1.dll" Id="_api_ms_win_core_processthreads_l1__3a24025c_08f9_4d11_9ea0_bbb5a94237ce" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-processthreads-l1-1-1.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_profile_l1_1_0.dll_3479d338_ae15_4a88_871c_b6ac12a092d7" Guid="989fb6f9-1014-46b9-b15c-9b3406fbaf77" Win64="no">
+              <File Name="api-ms-win-core-profile-l1-1-0.dll" Id="_api_ms_win_core_profile_l1_1_0.dll_3479d338_ae15_4a88_871c_b6ac12a092d7" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-profile-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_rtlsupport_l1_1_0._7d62ad41_7832_464c_a096_8a9b42549be3" Guid="eb66b0c7-e6a0-4539-b899-cf11e9bda107" Win64="no">
+              <File Name="api-ms-win-core-rtlsupport-l1-1-0.dll" Id="_api_ms_win_core_rtlsupport_l1_1_0._7d62ad41_7832_464c_a096_8a9b42549be3" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-rtlsupport-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_string_l1_1_0.dll_fa3b632d_2cb3_4854_9171_31d6a76026f1" Guid="d7a347a5-027d-4cbd-b63b-416bf96479eb" Win64="no">
+              <File Name="api-ms-win-core-string-l1-1-0.dll" Id="_api_ms_win_core_string_l1_1_0.dll_fa3b632d_2cb3_4854_9171_31d6a76026f1" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-string-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_synch_l1_1_0.dll_075a3d6a_297e_4605_a9b5_6fc3503fba70" Guid="6b2c23fd-d13e-4234-aa74-669304069bf6" Win64="no">
+              <File Name="api-ms-win-core-synch-l1-1-0.dll" Id="_api_ms_win_core_synch_l1_1_0.dll_075a3d6a_297e_4605_a9b5_6fc3503fba70" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-synch-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_synch_l1_2_0.dll_615641a6_ae7c_4eb4_b7bd_f1d97d742073" Guid="4f69f0cf-0790-4c70-805c-f7ac6c8e43fa" Win64="no">
+              <File Name="api-ms-win-core-synch-l1-2-0.dll" Id="_api_ms_win_core_synch_l1_2_0.dll_615641a6_ae7c_4eb4_b7bd_f1d97d742073" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-synch-l1-2-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_sysinfo_l1_1_0.dll_b24e83a6_4854_4c15_a888_4243552c421e" Guid="7333100c-3da9-484e-8da5-4701b59a8527" Win64="no">
+              <File Name="api-ms-win-core-sysinfo-l1-1-0.dll" Id="_api_ms_win_core_sysinfo_l1_1_0.dll_b24e83a6_4854_4c15_a888_4243552c421e" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-sysinfo-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_timezone_l1_1_0.dl_13497051_d600_47e5_a49a_296f72e89c20" Guid="1dd3f985-cb39-4476-856b-ec5ebe844aaf" Win64="no">
+              <File Name="api-ms-win-core-timezone-l1-1-0.dll" Id="_api_ms_win_core_timezone_l1_1_0.dl_13497051_d600_47e5_a49a_296f72e89c20" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-timezone-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_core_util_l1_1_0.dll_b21a620c_36e8_4a3d_ad69_6bd30cdd905a" Guid="82bb1265-df5f-4a42-9180-54d83f430049" Win64="no">
+              <File Name="api-ms-win-core-util-l1-1-0.dll" Id="_api_ms_win_core_util_l1_1_0.dll_b21a620c_36e8_4a3d_ad69_6bd30cdd905a" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-core-util-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_conio_l1_1_0.dll_6631037c_79f0_4027_af29_a16c90b289d6" Guid="7ba5c72b-d6a5-4767-ac1b-67fafba8b6a4" Win64="no">
+              <File Name="api-ms-win-crt-conio-l1-1-0.dll" Id="_api_ms_win_crt_conio_l1_1_0.dll_6631037c_79f0_4027_af29_a16c90b289d6" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-conio-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_convert_l1_1_0.dll_d61acae6_3314_4f57_b4c7_8cf1262f91aa" Guid="3cea73d0-3828-4792-a189-202566f21e76" Win64="no">
+              <File Name="api-ms-win-crt-convert-l1-1-0.dll" Id="_api_ms_win_crt_convert_l1_1_0.dll_d61acae6_3314_4f57_b4c7_8cf1262f91aa" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-convert-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_environment_l1_1_0._19c42610_adca_4cf1_bb4c_b2bd83cedf02" Guid="897f402b-1591-4409-a28c-1797214d124e" Win64="no">
+              <File Name="api-ms-win-crt-environment-l1-1-0.dll" Id="_api_ms_win_crt_environment_l1_1_0._19c42610_adca_4cf1_bb4c_b2bd83cedf02" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-environment-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_filesystem_l1_1_0.d_72b90644_eab1_437b_9a21_7bc4fbc16170" Guid="af77e774-2b68-4be0-a953-ba4cbb74aacd" Win64="no">
+              <File Name="api-ms-win-crt-filesystem-l1-1-0.dll" Id="_api_ms_win_crt_filesystem_l1_1_0.d_72b90644_eab1_437b_9a21_7bc4fbc16170" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-filesystem-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_heap_l1_1_0.dll_fb85a280_132b_418a_8fca_4cc41a6199ac" Guid="310c763b-1e49-4c9f-a79f-cc0f729a1897" Win64="no">
+              <File Name="api-ms-win-crt-heap-l1-1-0.dll" Id="_api_ms_win_crt_heap_l1_1_0.dll_fb85a280_132b_418a_8fca_4cc41a6199ac" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-heap-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_locale_l1_1_0.dll_efe96ac4_50e2_4bdf_85a9_b6c949ef3996" Guid="19695952-8865-4336-a04b-3f098cac0fa8" Win64="no">
+              <File Name="api-ms-win-crt-locale-l1-1-0.dll" Id="_api_ms_win_crt_locale_l1_1_0.dll_efe96ac4_50e2_4bdf_85a9_b6c949ef3996" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-locale-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_math_l1_1_0.dll_ef8e7499_cdcf_4ec9_a9b4_d06e02ef004d" Guid="5b45b048-b979-458d-8ce6-9720f52b9fa8" Win64="no">
+              <File Name="api-ms-win-crt-math-l1-1-0.dll" Id="_api_ms_win_crt_math_l1_1_0.dll_ef8e7499_cdcf_4ec9_a9b4_d06e02ef004d" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-math-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_multibyte_l1_1_0.dl_2408b5b1_9382_4ad9_9ab1_82a00d84848a" Guid="1cc37be6-5119-460f-850f-5e907c9fcf31" Win64="no">
+              <File Name="api-ms-win-crt-multibyte-l1-1-0.dll" Id="_api_ms_win_crt_multibyte_l1_1_0.dl_2408b5b1_9382_4ad9_9ab1_82a00d84848a" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-multibyte-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_private_l1_1_0.dll_ad2911b2_3ac4_4ee0_b7c6_3ef8d8261f00" Guid="9b14945f-6318-4ae2-ab9a-c11a5c91e430" Win64="no">
+              <File Name="api-ms-win-crt-private-l1-1-0.dll" Id="_api_ms_win_crt_private_l1_1_0.dll_ad2911b2_3ac4_4ee0_b7c6_3ef8d8261f00" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-private-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_process_l1_1_0.dll_60b8cd99_93eb_4f5f_a45e_207d746d7c9c" Guid="4dba6105-e241-4902-85c1-242ef0a95137" Win64="no">
+              <File Name="api-ms-win-crt-process-l1-1-0.dll" Id="_api_ms_win_crt_process_l1_1_0.dll_60b8cd99_93eb_4f5f_a45e_207d746d7c9c" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-process-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_runtime_l1_1_0.dll_929fe7d2_b52a_4b03_a1f2_a57bf6060105" Guid="2b23f2bb-cdf2-44c0-b797-2b8b600552ff" Win64="no">
+              <File Name="api-ms-win-crt-runtime-l1-1-0.dll" Id="_api_ms_win_crt_runtime_l1_1_0.dll_929fe7d2_b52a_4b03_a1f2_a57bf6060105" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-runtime-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_stdio_l1_1_0.dll_4551ff55_6109_41e7_b17f_d509a69239df" Guid="eea7d0a8-91c3-4122-b24a-9bed43010d52" Win64="no">
+              <File Name="api-ms-win-crt-stdio-l1-1-0.dll" Id="_api_ms_win_crt_stdio_l1_1_0.dll_4551ff55_6109_41e7_b17f_d509a69239df" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-stdio-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_string_l1_1_0.dll_78fe85aa_49d1_43ee_b996_190f3f422adc" Guid="1dc98f3f-6f73-49a0-b325-88199e49f390" Win64="no">
+              <File Name="api-ms-win-crt-string-l1-1-0.dll" Id="_api_ms_win_crt_string_l1_1_0.dll_78fe85aa_49d1_43ee_b996_190f3f422adc" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-string-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_time_l1_1_0.dll_675e67da_89e8_4fe1_9f11_0d42c112b641" Guid="782d6034-e72d-483f-97ae-39f368c39788" Win64="no">
+              <File Name="api-ms-win-crt-time-l1-1-0.dll" Id="_api_ms_win_crt_time_l1_1_0.dll_675e67da_89e8_4fe1_9f11_0d42c112b641" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-time-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_api_ms_win_crt_utility_l1_1_0.dll_7ec3e969_2dd5_4c7a_adcf_b3f4b15b2b85" Guid="bd04c2b8-8cc2-449b-aa4c-a377d3795c28" Win64="no">
+              <File Name="api-ms-win-crt-utility-l1-1-0.dll" Id="_api_ms_win_crt_utility_l1_1_0.dll_7ec3e969_2dd5_4c7a_adcf_b3f4b15b2b85" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\api-ms-win-crt-utility-l1-1-0.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_blink_image_resources_200_percent._50a59b74_dca9_442e_83a0_df55068b1967" Guid="277ce76d-ea32-4ec7-ad1c-593febd5884f" Win64="no">
+              <File Name="blink_image_resources_200_percent.pak" Id="_blink_image_resources_200_percent._50a59b74_dca9_442e_83a0_df55068b1967" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\blink_image_resources_200_percent.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_content_resources_200_percent.pak_84349dbb_bc85_4cc3_a6ad_0b1bfdd78295" Guid="bf866e96-2695-4074-ae4f-9596780e1a21" Win64="no">
+              <File Name="content_resources_200_percent.pak" Id="_content_resources_200_percent.pak_84349dbb_bc85_4cc3_a6ad_0b1bfdd78295" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\content_resources_200_percent.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_content_shell.pak_7ef5f6d4_75f4_4d22_b7e4_a1a89e03b8a2" Guid="fd22f3cb-108b-40b6-813f-f8d660ed261c" Win64="no">
+              <File Name="content_shell.pak" Id="_content_shell.pak_7ef5f6d4_75f4_4d22_b7e4_a1a89e03b8a2" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\content_shell.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_d3dcompiler_47.dll_58fae41c_6a01_444e_b727_c2627f431f80" Guid="4b29e254-bcae-4641-9e3a-4aa78640a313" Win64="no">
+              <File Name="d3dcompiler_47.dll" Id="_d3dcompiler_47.dll_58fae41c_6a01_444e_b727_c2627f431f80" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\d3dcompiler_47.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_ffmpeg.dll_ec8d8ce9_8b12_47bf_a91a_1b307c68431f" Guid="b7c00677-7d77-496f-99f6-ed17f2bdd124" Win64="no">
+              <File Name="ffmpeg.dll" Id="_ffmpeg.dll_ec8d8ce9_8b12_47bf_a91a_1b307c68431f" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\ffmpeg.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_icudtl.dat_a9d23575_aff4_4534_a276_fea212f1b673" Guid="890d76ae-708c-411f-9caf-9d444322dfa1" Win64="no">
+              <File Name="icudtl.dat" Id="_icudtl.dat_a9d23575_aff4_4534_a276_fea212f1b673" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\icudtl.dat" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_libEGL.dll_fc5d9239_7190_44c8_9839_1ac92360949a" Guid="34be42cb-72c4-415d-8355-11de2042441f" Win64="no">
+              <File Name="libEGL.dll" Id="_libEGL.dll_fc5d9239_7190_44c8_9839_1ac92360949a" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\libEGL.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_libGLESv2.dll_696316f2_da3f_4abc_9421_43063e7bd1f0" Guid="033d4ed5-e5c5-4067-9596-ac9095fbd5c6" Win64="no">
+              <File Name="libGLESv2.dll" Id="_libGLESv2.dll_696316f2_da3f_4abc_9421_43063e7bd1f0" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\libGLESv2.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_msvcp140.dll_3f035abc_84c6_4f90_b2e8_39bf8d0ea714" Guid="5af01f5c-744a-44eb-8ce2-07632ddd167d" Win64="no">
+              <File Name="msvcp140.dll" Id="_msvcp140.dll_3f035abc_84c6_4f90_b2e8_39bf8d0ea714" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\msvcp140.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_natives_blob.bin_88c82b9e_76d0_48f2_8789_d9737d08dd82" Guid="14532834-b7f4-4858-8ccc-f07033cdbbc0" Win64="no">
+              <File Name="natives_blob.bin" Id="_natives_blob.bin_88c82b9e_76d0_48f2_8789_d9737d08dd82" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\natives_blob.bin" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_node.dll_484a8c77_3128_4dbd_8068_9258e234edaf" Guid="3a9bcc0d-db0f-4396-a2f4-11a450044f31" Win64="no">
+              <File Name="node.dll" Id="_node.dll_484a8c77_3128_4dbd_8068_9258e234edaf" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\node.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_pdf_viewer_resources.pak_10173d8a_c726_43f3_9384_27ae4c698bc0" Guid="04828507-cda0-438b-b7d9-ffe62bde8840" Win64="no">
+              <File Name="pdf_viewer_resources.pak" Id="_pdf_viewer_resources.pak_10173d8a_c726_43f3_9384_27ae4c698bc0" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\pdf_viewer_resources.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_snapshot_blob.bin_85943e67_e3b6_4cf7_9f50_3fb6540aa637" Guid="cb22477d-3065-442b-a62d-2e59f730037d" Win64="no">
+              <File Name="snapshot_blob.bin" Id="_snapshot_blob.bin_85943e67_e3b6_4cf7_9f50_3fb6540aa637" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\snapshot_blob.bin" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_ucrtbase.dll_fd32fb0b_f37a_45f7_9a6d_26142f462f58" Guid="59a89717-599f-48ec-9464-824178d01eba" Win64="no">
+              <File Name="ucrtbase.dll" Id="_ucrtbase.dll_fd32fb0b_f37a_45f7_9a6d_26142f462f58" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\ucrtbase.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_ui_resources_200_percent.pak_b048e681_aa11_484e_ae93_dd923cd2bbdd" Guid="c2b87711-5fbb-4e1a-a073-8cd7e119e440" Win64="no">
+              <File Name="ui_resources_200_percent.pak" Id="_ui_resources_200_percent.pak_b048e681_aa11_484e_ae93_dd923cd2bbdd" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\ui_resources_200_percent.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_vcruntime140.dll_ca225436_1f22_442a_a8df_48747f5d1963" Guid="62128d35-48f0-4836-b285-8e2388b4c0ae" Win64="no">
+              <File Name="vcruntime140.dll" Id="_vcruntime140.dll_ca225436_1f22_442a_a8df_48747f5d1963" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\vcruntime140.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_version_9ab512a9_1a03_481f_b1ba_9565b63807d6" Guid="ee176a93-c33e-41f8-80a0-16771256d264" Win64="no">
+              <File Name="version" Id="_version_9ab512a9_1a03_481f_b1ba_9565b63807d6" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\version" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_views_resources_200_percent.pak_12a41695_da36_4e0b_b729_7b9f96988128" Guid="8cda880f-b29f-4794-b418-fb1018b8ecd8" Win64="no">
+              <File Name="views_resources_200_percent.pak" Id="_views_resources_200_percent.pak_12a41695_da36_4e0b_b729_7b9f96988128" Source="C:\Users\Arturs\parluks\install\windows\source\Parluks-win32-x64\views_resources_200_percent.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+          </Directory>
+          <Component Id="_parluks.exe_5adb5351_e8b6_40c4_8cea_ef31048957c0" Guid="e01a21e7-6d27-4508-981d-cb669c8b26d4" Win64="no">
+            <File Name="parluks.exe" Id="_parluks.exe_5adb5351_e8b6_40c4_8cea_ef31048957c0" Source="C:\Users\Arturs\AppData\Local\Temp\parluksf65pwo\parluks.exe" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+          </Component>
+          <Component Id="_.installInfo.json_f2d448bd_91f7_46cd_831c_b30d3c682be6" Guid="fbaf9bb6-4b3a-421e-896c-d8547b16ff79" Win64="no">
+            <File Name=".installInfo.json" Id="_.installInfo.json_f2d448bd_91f7_46cd_831c_b30d3c682be6" Source="C:\Users\Arturs\AppData\Local\Temp\.installInfoxh1uBp\.installInfo.json" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+          </Component>
+          <Component Id="RegistryInstallPath" Guid="11cf0df3-baa4-4f03-ac35-ccf0b5f8c11e" Win64="no">
+            <RegistryKey Root="HKMU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{071638AB-C9CF-4E49-B01D-F28A3798CA19}.msq" ForceCreateOnInstall="no" ForceDeleteOnUninstall="yes">
+              <RegistryValue Name="InstallPath" Type="string" Value="[APPLICATIONROOTDIRECTORY]" KeyPath="yes"/>
+            </RegistryKey>
+          </Component>
+          <Component Id="UninstallDisplayName" Guid="f31f02bc-51cf-4c0c-ab6f-b2ed0693dfd9" Win64="no">
+            <RegistryKey Root="HKMU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{071638AB-C9CF-4E49-B01D-F28A3798CA19}.msq" ForceCreateOnInstall="no" ForceDeleteOnUninstall="yes">
+              <RegistryValue Name="DisplayName" Type="string" Value="[VisibleProductName]" KeyPath="yes"/>
+            </RegistryKey>
+          </Component>
+          <Component Id="UninstallPublisher" Guid="3e7f1187-3298-4d94-ac31-5c29e5337978" Win64="no">
+            <RegistryKey Root="HKMU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{071638AB-C9CF-4E49-B01D-F28A3798CA19}.msq" ForceCreateOnInstall="no" ForceDeleteOnUninstall="yes">
+              <RegistryValue Name="Publisher" Type="string" Value="Parluks" KeyPath="yes"/>
+            </RegistryKey>
+          </Component>
+          <Component Id="UninstallDisplayVersion" Guid="38a95508-c888-4607-895c-5c220e656d5d" Win64="no">
+            <RegistryKey Root="HKMU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{071638AB-C9CF-4E49-B01D-F28A3798CA19}.msq" ForceCreateOnInstall="no" ForceDeleteOnUninstall="yes">
+              <RegistryValue Name="DisplayVersion" Type="string" Value="1.0.0" KeyPath="yes"/>
+            </RegistryKey>
+          </Component>
+          <Component Id="UninstallModifyString" Guid="930520e7-8c88-44ca-81ca-33d83c166160" Win64="no">
+            <RegistryKey Root="HKMU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{071638AB-C9CF-4E49-B01D-F28A3798CA19}.msq" ForceCreateOnInstall="no" ForceDeleteOnUninstall="yes">
+              <RegistryValue Name="ModifyPath" Type="expandable" Value="MsiExec.exe /I {071638AB-C9CF-4E49-B01D-F28A3798CA19}" KeyPath="yes"/>
+            </RegistryKey>
+          </Component>
+          <Component Id="UninstallString" Guid="fb00bfc4-fa39-48d4-b865-18995fb1caef" Win64="no">
+            <RegistryKey Root="HKMU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{071638AB-C9CF-4E49-B01D-F28A3798CA19}.msq" ForceCreateOnInstall="no" ForceDeleteOnUninstall="yes">
+              <RegistryValue Name="UninstallString" Type="expandable" Value="MsiExec.exe /X {071638AB-C9CF-4E49-B01D-F28A3798CA19}" KeyPath="yes"/>
+            </RegistryKey>
+          </Component>
+          <Component Id="UninstallDisplayIcon" Guid="6008cc4a-989e-426c-ba96-4d251600e2ac" Win64="no">
+            <RegistryKey Root="HKMU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{071638AB-C9CF-4E49-B01D-F28A3798CA19}.msq" ForceCreateOnInstall="no" ForceDeleteOnUninstall="yes">
+              <RegistryValue Name="DisplayIcon" Type="expandable" Value="[SystemFolder]msiexec.exe" KeyPath="yes"/>
+            </RegistryKey>
+          </Component>
+        </Directory>
+      </Directory>
+
+      <!-- Desktop -->
+      <Directory Id="DesktopFolder" Name="Desktop" />
+
+      <!-- Start Menu -->
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="Parluks"/>
+      </Directory>
+    </Directory>
+
+    <!-- Step 3: Add app to Start Menu -->
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="bfefa34d-c782-4ae6-996c-aa5490323416" Win64="no">
+        <Shortcut Id="ApplicationStartMenuShortcut"
+                  Name="Parluks"
+                  Description="Browser for developers"
+                  Target="[APPLICATIONROOTDIRECTORY]parluks.exe"
+                  WorkingDirectory="APPLICATIONROOTDIRECTORY">
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="com.squirrel.parluks.parluks" />
+        </Shortcut>
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
+        <RegistryValue Root="HKCU"
+                       Key="Software\Microsoft\Parluks"
+                       Name="installed"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+   <!-- Step 4: Add app desktop shortcut --> 
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="cc43036b-aaee-433f-8810-c3bf1816d48c" >
+          <Shortcut Id="MyDesktopShortcut"
+                    Name="Parluks"
+                    Description="Browser for developers"
+                    Target="[APPLICATIONROOTDIRECTORY]parluks.exe"
+                    WorkingDirectory="APPLICATIONROOTDIRECTORY"/>
+          <RegistryValue Root="HKCU"
+                    Key="Software\Microsoft\Parluks"
+                    Name="installed"
+                    Type="integer"
+                    Value="1"
+                    KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+
+    <!-- Lets cleanup any files that are were not part of the initial install
+    via this MSI. Such as newer versions installed by the auto-updater. -->
+    <DirectoryRef Id="APPLICATIONROOTDIRECTORY">
+      <Component Id="PurgeOnUninstall" Guid="967254ce-925d-44de-875e-99eb634c6407" Win64="no">
+        <CreateFolder/>
+        <util:RemoveFolderEx On="uninstall" Property="INSTALLPATH" />
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="Complete" Title="Parluks (1.0.0)" Description="The complete package." Display="expand" Level="1" ConfigurableDirectory="APPLICATIONROOTDIRECTORY">
+      <!-- Step 5: Tell WiX to install the files -->
+      <Feature Id="MainApplication" Title="Main Application" Level="1" Description="The main components to run the applications." >
+        <ComponentRef Id="_locales_am.pak_213aca85_3e40_40f5_9cd4_57b323ad52bc" />
+        <ComponentRef Id="_locales_ar.pak_e0b5ea1c_8281_4577_ba36_59751aea3729" />
+        <ComponentRef Id="_locales_bg.pak_c815d444_5c82_44b4_ba0e_b8fd143ad589" />
+        <ComponentRef Id="_locales_bn.pak_ca68c818_d96a_4d0d_bb0e_7f82bb0b2d01" />
+        <ComponentRef Id="_locales_ca.pak_e15b1f49_4512_449f_a402_47eeafd9c7bf" />
+        <ComponentRef Id="_locales_cs.pak_14af7926_8c6b_44e6_a241_ae68eaec4874" />
+        <ComponentRef Id="_locales_da.pak_42962829_bc19_4e59_95a6_74b3a5faa730" />
+        <ComponentRef Id="_locales_de.pak_a7fe2e9a_89e4_43a4_941a_c6a0b52d1dd7" />
+        <ComponentRef Id="_locales_el.pak_79326b00_e1a4_4dbf_b994_e3228531bdb1" />
+        <ComponentRef Id="_locales_en_GB.pak_beed53e8_4c56_4520_88bb_858bc2111781" />
+        <ComponentRef Id="_locales_en_US.pak_fa2c98d2_0491_4814_9ade_7d163d7fa96b" />
+        <ComponentRef Id="_locales_es_419.pak_d1ad52c5_74a3_4b66_b5c5_8850b1267170" />
+        <ComponentRef Id="_locales_es.pak_bb16e917_3430_44a8_97d0_2b9e8f94ee2a" />
+        <ComponentRef Id="_locales_et.pak_829e88b7_31a2_48b8_b95e_48e29afd043b" />
+        <ComponentRef Id="_locales_fa.pak_2f0222c3_029e_4296_aec9_75495ffb1293" />
+        <ComponentRef Id="_locales_fake_bidi.pak_6dc7e86f_30a2_47bb_8abe_a21d937d6e3e" />
+        <ComponentRef Id="_locales_fi.pak_24a81df2_f6ac_409d_98af_fe84ebb7ed65" />
+        <ComponentRef Id="_locales_fil.pak_1b225516_ffa2_4f2c_935f_73455acd04bf" />
+        <ComponentRef Id="_locales_fr.pak_6825794e_71a6_4531_b54a_c31e18fd7dbe" />
+        <ComponentRef Id="_locales_gu.pak_bec61af3_e420_469f_a30a_c002e9ee872c" />
+        <ComponentRef Id="_locales_he.pak_a6364fd8_2d5f_4067_9dfe_12954c4fdfd7" />
+        <ComponentRef Id="_locales_hi.pak_3ec6cfeb_7e38_43ea_a7f7_a9cc90aadf7d" />
+        <ComponentRef Id="_locales_hr.pak_fb52a242_cfcc_44fb_87bc_48fc9880b7a1" />
+        <ComponentRef Id="_locales_hu.pak_13b2754c_a247_4541_982d_f435651016c9" />
+        <ComponentRef Id="_locales_id.pak_4a4097ca_48d2_43bf_ac17_9c1984bdbe08" />
+        <ComponentRef Id="_locales_it.pak_3f992e85_ee4d_4269_bb1b_045d79a774e4" />
+        <ComponentRef Id="_locales_ja.pak_e5ebfaea_d436_40fd_8c53_0ffad34a1838" />
+        <ComponentRef Id="_locales_kn.pak_6af76589_e1ca_4bb3_8ab0_03f615565e80" />
+        <ComponentRef Id="_locales_ko.pak_4b6aabb6_26c2_4a4e_9d6b_637a9d9762c9" />
+        <ComponentRef Id="_locales_lt.pak_8b924858_f653_4232_8a03_333a121cb61e" />
+        <ComponentRef Id="_locales_lv.pak_a6b8e61f_bce1_4a1a_9390_c1e70bfafce5" />
+        <ComponentRef Id="_locales_ml.pak_3d7a0105_f858_4afd_af65_92c906ad9dad" />
+        <ComponentRef Id="_locales_mr.pak_617fd591_c8da_413e_92df_eb0e2b83d533" />
+        <ComponentRef Id="_locales_ms.pak_00174a91_7d7d_4e3b_9d61_cec94f54e504" />
+        <ComponentRef Id="_locales_nb.pak_4309f433_fa14_407b_a7d6_7b1573fa3684" />
+        <ComponentRef Id="_locales_nl.pak_4538ca11_e58a_4d3a_8b35_3057670c8395" />
+        <ComponentRef Id="_locales_pl.pak_32f3e30a_4079_4f10_8440_0b98deda6280" />
+        <ComponentRef Id="_locales_pt_BR.pak_ddc927c0_8cc3_48db_aeac_dac541bd4fa8" />
+        <ComponentRef Id="_locales_pt_PT.pak_cadc8ce3_c65f_4a53_ae3a_77f67d3857d9" />
+        <ComponentRef Id="_locales_ro.pak_1e19559e_8d08_4e12_ba8e_7683b64622b3" />
+        <ComponentRef Id="_locales_ru.pak_00929d81_84d6_4001_8489_bb888229bb90" />
+        <ComponentRef Id="_locales_sk.pak_943fa041_3bfe_45d4_aceb_7d6867312364" />
+        <ComponentRef Id="_locales_sl.pak_07922b26_91d3_4bca_a511_8743f640f104" />
+        <ComponentRef Id="_locales_sr.pak_1a17c1c6_d4db_4db4_8211_51fc888a54bb" />
+        <ComponentRef Id="_locales_sv.pak_74a7ede8_bfb0_4e1f_997b_9965a18b908b" />
+        <ComponentRef Id="_locales_sw.pak_2142f625_e464_4c52_a568_d66b42609864" />
+        <ComponentRef Id="_locales_ta.pak_c68a9b34_7550_4c0d_a0cf_f4b212eb8d4f" />
+        <ComponentRef Id="_locales_te.pak_ad8a193d_3044_4f4d_a716_16e805cb55a8" />
+        <ComponentRef Id="_locales_th.pak_4c06819a_7798_4b91_9121_5159aee668c0" />
+        <ComponentRef Id="_locales_tr.pak_433c09dd_4df7_43fb_93c4_9f0cef840ebb" />
+        <ComponentRef Id="_locales_uk.pak_8115278f_3c4e_474b_8a42_71fadea699c6" />
+        <ComponentRef Id="_locales_vi.pak_d43f4d27_6d4a_4bba_8a0b_9d3c403062f6" />
+        <ComponentRef Id="_locales_zh_CN.pak_195ff350_5c0d_4f0c_a076_4d78f520933e" />
+        <ComponentRef Id="_locales_zh_TW.pak_f9f80be8_89c7_47c7_b2bb_971290886382" />
+        <ComponentRef Id="_boomerang_startup_analitycs.min.cs_8a7c35d5_c1b3_4c5a_b1f0_0a48d0e3c4bc" />
+        <ComponentRef Id="_resources_app_css_boostrap.css_d8205407_b64e_4d0d_ab77_a14f35376d1a" />
+        <ComponentRef Id="_resources_app_css_index.css_23489b2c_1baa_4bff_80bf_1b128ad06dce" />
+        <ComponentRef Id="_background.svg_e69a58e6_1a39_4c5d_b79a_a3f617b9bb40" />
+        <ComponentRef Id="_resources_app_images_camera.svg_82a0dc8b_c4ab_4ed5_8741_830909bdd7f9" />
+        <ComponentRef Id="_resources_app_images_cog.svg_661afa49_3c06_4dea_83dc_cb59bc870d49" />
+        <ComponentRef Id="_resources_app_images_device.svg_79f9030a_e25e_438b_bd33_7a58d11ed157" />
+        <ComponentRef Id="_resources_app_images_donate.svg_40b24c0e_f181_4427_9b32_57e2bf57dde1" />
+        <ComponentRef Id="_resources_app_images_icon.ico_bd4de7f9_1f55_4b9a_b4ca_78afb54a88fe" />
+        <ComponentRef Id="_resources_app_images_icon.png_8961ea43_aa89_4862_9f08_c4192ff9fedf" />
+        <ComponentRef Id="_resources_app_images_icon_16.ico_b936f1c6_dd43_4153_afc9_a91558e9ac10" />
+        <ComponentRef Id="_resources_app_images_icon_16.png_2bd2a7af_d627_4ed7_91ad_2ec9c7307028" />
+        <ComponentRef Id="_resources_app_images_icon_32.ico_c11bc77b_de5d_4e77_b84a_1d65c1764986" />
+        <ComponentRef Id="_resources_app_images_icon_32.png_f6a5ebdd_1375_42fb_8571_30ee637e1471" />
+        <ComponentRef Id="_laptop_rotated.png_3ce7df7d_2770_4c3c_8b5b_655929ef16a8" />
+        <ComponentRef Id="_resources_app_images_laptop.png_e0d24d20_415a_45de_ad9b_6b2592051c0e" />
+        <ComponentRef Id="_resources_app_images_left.svg_53350089_5de8_426d_80b1_217cac1fdc36" />
+        <ComponentRef Id="_resources_app_images_logo.png_dfb926bc_d3f0_4a96_9373_7d37545530fa" />
+        <ComponentRef Id="_phone_rotated.png_4774ede4_e0b1_4df4_80fd_48f1854e8f2f" />
+        <ComponentRef Id="_resources_app_images_phone.png_3ae2697b_a513_4561_8b56_47654be4e0ac" />
+        <ComponentRef Id="_resources_app_images_refresh.svg_e1d68d31_ef12_4fb2_ba3c_7c6be50d47fd" />
+        <ComponentRef Id="_resources_app_images_right.svg_86eabe99_2493_4f88_956f_4f60b7278fd5" />
+        <ComponentRef Id="_resources_app_images_search.svg_215cc7cf_a3af_4162_9a18_ae3266b6ff50" />
+        <ComponentRef Id="_resources_app_images_settings.svg_3065db59_06fc_4a46_89a4_0373d3d9a642" />
+        <ComponentRef Id="_tablet_rotated.png_83f3f14e_7d99_4e8c_9ad4_ec04f1d7af18" />
+        <ComponentRef Id="_resources_app_images_tablet.png_77fffdb4_6334_49db_8329_05a2c93c2a68" />
+        <ComponentRef Id="_tv_rotated.png_34e43dbb_428f_4db3_bf7f_e0498eb2582b" />
+        <ComponentRef Id="_resources_app_images_tv.png_70539a67_f248_465d_88a9_35053b37309d" />
+        <ComponentRef Id="_resources_app_images_website.svg_4df7b4bd_a71a_40a8_ae11_0a51ffbeddc3" />
+        <ComponentRef Id="_resources_app_images_zoom.svg_b78bbf52_9815_4e3a_989c_8bbb8402ad54" />
+        <ComponentRef Id="_resources_app_js_app.js_38e5c15a_b165_4176_91d3_efca94b73c6f" />
+        <ComponentRef Id="_resources_app_js_device.js_5f1400d9_0d6e_4ce3_9a7c_f4d44fabfe80" />
+        <ComponentRef Id="_resources_app_js_preload.js_ad153ec2_33d5_4e18_be6d_58e530a92f69" />
+        <ComponentRef Id="_resources_app_js_store.js_8b3a157a_167b_4e21_bb55_1162dd4e9ca0" />
+        <ComponentRef Id="_resources_app_LICENSE_a34d882c_23aa_4767_a6df_ce7c70fa58b7" />
+        <ComponentRef Id="_resources_app_README.md_4a734939_0a96_4f7f_9286_e3398641cefe" />
+        <ComponentRef Id="_resources_app_app.ico_684e2b1e_f126_449c_a45f_280428e85aeb" />
+        <ComponentRef Id="_resources_app_icon_32.icns_fbeb9157_b746_40f6_b634_4096e2c4f2a6" />
+        <ComponentRef Id="_resources_app_index.html_d0fc5b4c_516d_4e3e_a1f8_29a086c4340a" />
+        <ComponentRef Id="_resources_app_main.js_1e81b55e_4532_4404_b412_1f167b593f44" />
+        <ComponentRef Id="_resources_app_package.json_2b07c731_ac82_4ef6_ae0c_93992a3862fb" />
+        <ComponentRef Id="_resources_electron.asar_7325f5ad_af1c_410d_855c_ac6cf4c3fc66" />
+        <ComponentRef Id="_LICENSE_54279c15_03fe_4fb9_9bf2_55ab9a17d32e" />
+        <ComponentRef Id="_LICENSES.chromium.html_784cf166_633b_45e8_8e07_cc8d3df21d31" />
+        <ComponentRef Id="_Parluks.exe_8155ff29_3398_4bcf_a8fa_39d3642e531b" />
+        <ComponentRef Id="_api_ms_win_core_console_l1_1_0.dll_89348973_9841_4c05_a466_8d031ab9dc22" />
+        <ComponentRef Id="_api_ms_win_core_datetime_l1_1_0.dl_9278ec40_3acb_426a_80c4_728ff261e564" />
+        <ComponentRef Id="_api_ms_win_core_debug_l1_1_0.dll_855f43c0_c789_469c_a8bc_f545de9afc0c" />
+        <ComponentRef Id="_api_ms_win_core_errorhandling_l1_1_39be856d_d56a_4aa7_9697_d6d7a1ecff6d" />
+        <ComponentRef Id="_api_ms_win_core_file_l1_1_0.dll_f7521fc5_0714_446d_8359_1b501dec017e" />
+        <ComponentRef Id="_api_ms_win_core_file_l1_2_0.dll_84677836_8d2d_4a2e_ab1d_9d61a560ba2b" />
+        <ComponentRef Id="_api_ms_win_core_file_l2_1_0.dll_b3db8a9b_a42b_4d17_b2ca_c20dec661e20" />
+        <ComponentRef Id="_api_ms_win_core_handle_l1_1_0.dll_d73df95e_3941_47cb_a456_15367871bf7f" />
+        <ComponentRef Id="_api_ms_win_core_heap_l1_1_0.dll_c3c3fc63_3579_42f0_9ec1_fab58908be77" />
+        <ComponentRef Id="_api_ms_win_core_interlocked_l1_1_0_d37566e6_3de1_406d_bcac_08a0a88e33a3" />
+        <ComponentRef Id="_api_ms_win_core_libraryloader_l1_1_7440658b_ba30_4b66_ad64_6c7426e81e5a" />
+        <ComponentRef Id="_api_ms_win_core_localization_l1_2__af08abbd_6543_4c8f_8ae2_b974e7ab699e" />
+        <ComponentRef Id="_api_ms_win_core_memory_l1_1_0.dll_8f625119_3cd5_4272_b3d9_110519b86b87" />
+        <ComponentRef Id="_api_ms_win_core_namedpipe_l1_1_0.d_1b3d5658_162d_4d98_9828_203f6c1f7e6b" />
+        <ComponentRef Id="_api_ms_win_core_processenvironment_4c35a811_d011_4704_869d_0200a7b5956d" />
+        <ComponentRef Id="_api_ms_win_core_processthreads_l1__4367aadf_5839_495c_b4b8_0b0515b409e9" />
+        <ComponentRef Id="_api_ms_win_core_processthreads_l1__3a24025c_08f9_4d11_9ea0_bbb5a94237ce" />
+        <ComponentRef Id="_api_ms_win_core_profile_l1_1_0.dll_3479d338_ae15_4a88_871c_b6ac12a092d7" />
+        <ComponentRef Id="_api_ms_win_core_rtlsupport_l1_1_0._7d62ad41_7832_464c_a096_8a9b42549be3" />
+        <ComponentRef Id="_api_ms_win_core_string_l1_1_0.dll_fa3b632d_2cb3_4854_9171_31d6a76026f1" />
+        <ComponentRef Id="_api_ms_win_core_synch_l1_1_0.dll_075a3d6a_297e_4605_a9b5_6fc3503fba70" />
+        <ComponentRef Id="_api_ms_win_core_synch_l1_2_0.dll_615641a6_ae7c_4eb4_b7bd_f1d97d742073" />
+        <ComponentRef Id="_api_ms_win_core_sysinfo_l1_1_0.dll_b24e83a6_4854_4c15_a888_4243552c421e" />
+        <ComponentRef Id="_api_ms_win_core_timezone_l1_1_0.dl_13497051_d600_47e5_a49a_296f72e89c20" />
+        <ComponentRef Id="_api_ms_win_core_util_l1_1_0.dll_b21a620c_36e8_4a3d_ad69_6bd30cdd905a" />
+        <ComponentRef Id="_api_ms_win_crt_conio_l1_1_0.dll_6631037c_79f0_4027_af29_a16c90b289d6" />
+        <ComponentRef Id="_api_ms_win_crt_convert_l1_1_0.dll_d61acae6_3314_4f57_b4c7_8cf1262f91aa" />
+        <ComponentRef Id="_api_ms_win_crt_environment_l1_1_0._19c42610_adca_4cf1_bb4c_b2bd83cedf02" />
+        <ComponentRef Id="_api_ms_win_crt_filesystem_l1_1_0.d_72b90644_eab1_437b_9a21_7bc4fbc16170" />
+        <ComponentRef Id="_api_ms_win_crt_heap_l1_1_0.dll_fb85a280_132b_418a_8fca_4cc41a6199ac" />
+        <ComponentRef Id="_api_ms_win_crt_locale_l1_1_0.dll_efe96ac4_50e2_4bdf_85a9_b6c949ef3996" />
+        <ComponentRef Id="_api_ms_win_crt_math_l1_1_0.dll_ef8e7499_cdcf_4ec9_a9b4_d06e02ef004d" />
+        <ComponentRef Id="_api_ms_win_crt_multibyte_l1_1_0.dl_2408b5b1_9382_4ad9_9ab1_82a00d84848a" />
+        <ComponentRef Id="_api_ms_win_crt_private_l1_1_0.dll_ad2911b2_3ac4_4ee0_b7c6_3ef8d8261f00" />
+        <ComponentRef Id="_api_ms_win_crt_process_l1_1_0.dll_60b8cd99_93eb_4f5f_a45e_207d746d7c9c" />
+        <ComponentRef Id="_api_ms_win_crt_runtime_l1_1_0.dll_929fe7d2_b52a_4b03_a1f2_a57bf6060105" />
+        <ComponentRef Id="_api_ms_win_crt_stdio_l1_1_0.dll_4551ff55_6109_41e7_b17f_d509a69239df" />
+        <ComponentRef Id="_api_ms_win_crt_string_l1_1_0.dll_78fe85aa_49d1_43ee_b996_190f3f422adc" />
+        <ComponentRef Id="_api_ms_win_crt_time_l1_1_0.dll_675e67da_89e8_4fe1_9f11_0d42c112b641" />
+        <ComponentRef Id="_api_ms_win_crt_utility_l1_1_0.dll_7ec3e969_2dd5_4c7a_adcf_b3f4b15b2b85" />
+        <ComponentRef Id="_blink_image_resources_200_percent._50a59b74_dca9_442e_83a0_df55068b1967" />
+        <ComponentRef Id="_content_resources_200_percent.pak_84349dbb_bc85_4cc3_a6ad_0b1bfdd78295" />
+        <ComponentRef Id="_content_shell.pak_7ef5f6d4_75f4_4d22_b7e4_a1a89e03b8a2" />
+        <ComponentRef Id="_d3dcompiler_47.dll_58fae41c_6a01_444e_b727_c2627f431f80" />
+        <ComponentRef Id="_ffmpeg.dll_ec8d8ce9_8b12_47bf_a91a_1b307c68431f" />
+        <ComponentRef Id="_icudtl.dat_a9d23575_aff4_4534_a276_fea212f1b673" />
+        <ComponentRef Id="_libEGL.dll_fc5d9239_7190_44c8_9839_1ac92360949a" />
+        <ComponentRef Id="_libGLESv2.dll_696316f2_da3f_4abc_9421_43063e7bd1f0" />
+        <ComponentRef Id="_msvcp140.dll_3f035abc_84c6_4f90_b2e8_39bf8d0ea714" />
+        <ComponentRef Id="_natives_blob.bin_88c82b9e_76d0_48f2_8789_d9737d08dd82" />
+        <ComponentRef Id="_node.dll_484a8c77_3128_4dbd_8068_9258e234edaf" />
+        <ComponentRef Id="_pdf_viewer_resources.pak_10173d8a_c726_43f3_9384_27ae4c698bc0" />
+        <ComponentRef Id="_snapshot_blob.bin_85943e67_e3b6_4cf7_9f50_3fb6540aa637" />
+        <ComponentRef Id="_ucrtbase.dll_fd32fb0b_f37a_45f7_9a6d_26142f462f58" />
+        <ComponentRef Id="_ui_resources_200_percent.pak_b048e681_aa11_484e_ae93_dd923cd2bbdd" />
+        <ComponentRef Id="_vcruntime140.dll_ca225436_1f22_442a_a8df_48747f5d1963" />
+        <ComponentRef Id="_version_9ab512a9_1a03_481f_b1ba_9565b63807d6" />
+        <ComponentRef Id="_views_resources_200_percent.pak_12a41695_da36_4e0b_b729_7b9f96988128" />
+        <ComponentRef Id="_parluks.exe_5adb5351_e8b6_40c4_8cea_ef31048957c0" />
+        <ComponentRef Id="_.installInfo.json_f2d448bd_91f7_46cd_831c_b30d3c682be6" />
+        <ComponentRef Id="RegistryInstallPath" />
+        <ComponentRef Id="UninstallDisplayName" />
+        <ComponentRef Id="UninstallPublisher" />
+        <ComponentRef Id="UninstallDisplayVersion" />
+        <ComponentRef Id="UninstallModifyString" />
+        <ComponentRef Id="UninstallString" />
+        <ComponentRef Id="UninstallDisplayIcon" />
+        <ComponentRef Id="ApplicationShortcut" />
+        <ComponentRef Id="DesktopShortcut" />
+        <ComponentRef Id="PurgeOnUninstall" />
+      </Feature> 
+    </Feature> 
+  </Product>
+</Wix>
