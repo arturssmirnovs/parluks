@@ -1,7 +1,7 @@
 
 <h1 align="center">
+  <a href="https://github.com/arturssmirnovs/parluks"><img src="https://raw.githubusercontent.com/arturssmirnovs/parluks/main/src/images/logo.png" alt="PARLUKS" width="200"></a>
   <br/>
-  <a href="https://github.com/arturssmirnovs/parluks"><img src="https://raw.githubusercontent.com/arturssmirnovs/parluks/main/src/images/logo.png?token=ABWPH6DCK3344I3M3QDXI4S77GF5O" alt="PARLUKS" width="200"></a>
   <br/>
 </h1>
 
