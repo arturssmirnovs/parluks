@@ -39,7 +39,16 @@ function createWindow () {
     store.set('version', VERSION);
   }
 
-  mainWindow = new BrowserWindow({ width, height });
+  mainWindow = new BrowserWindow({
+    width,
+    height,
+    webPreferences: {
+      nodeIntegration: true,
+      enableRemoteModule: true,
+      contextIsolation: false,
+      webviewTag: true
+    },
+  });
 
   switch (os.platform()) {
     case 'darwin':

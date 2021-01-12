@@ -61,8 +61,9 @@ class Device {
         divActions.className = "device-view-actions";
 
         var rotate = document.createElement("img");
-        rotate.src = "images/refresh.svg";
+        rotate.src = "images/rotate.svg";
         rotate.alt = "Rotate";
+        rotate.title = "Rotate"
         rotate.addEventListener('click', e => {
             this.rotate();
         });
@@ -71,14 +72,16 @@ class Device {
         var screenshot = document.createElement("img");
         screenshot.src = "images/camera.svg";
         screenshot.alt = "Screenshot";
+        screenshot.title = "Screenshot"
         screenshot.addEventListener('click', e => {
             this.screenshot();
         });
         divActions.appendChild(screenshot);
 
         var devTools = document.createElement("img");
-        devTools.src = "images/cog.svg";
+        devTools.src = "images/devtools.svg";
         devTools.alt = "Developer tools";
+        devTools.title = "Developer tools";
         devTools.addEventListener('click', e => {
             this.openDevTools();
         });
@@ -102,7 +105,7 @@ class Device {
             this.injectJS();
 
             if (!this.webContents) {
-                this.webContents = this.webview.getWebContents();
+                this.webContents = electron.remote.webContents.fromId(this.webview.getWebContentsId());
                 this.webContents.on('dom-ready', e => {
                     console.log('webContents dom-ready');
                 });
@@ -164,27 +167,38 @@ class Device {
 
     screenshot() {
         const dialog = electron.remote.dialog;
-        this.webContents.capturePage(img => {
-            dialog.showSaveDialog( null, {
-                    title: "Select the File Path to save",
-                    defaultPath: path.join(__dirname, "image.png"),
-                    buttonLabel: "Save",
-                    filters: [
-                        {
-                            name: "Image Files",
-                            extensions: ["png", "jpeg", "jpg"],
-                        },
-                    ],
-                    properties: [],
-                }, (file) => {
-                if (file) {
-                    fs.writeFile(file, img.toPNG(), "base64", function (err) {
-                        if (err) throw err;
-                        console.log("Saved!");
-                    });
-                }
-            });
-        });
+        this.webContents
+            .capturePage()
+            .then(img => {
+                dialog
+                    .showSaveDialog(null, {
+                        title: "Select the File Path to save",
+                        defaultPath: path.join(__dirname, "image.png"),
+                        buttonLabel: "Save",
+                        filters: [
+                            {
+                                name: "Image Files",
+                                extensions: ["png", "jpeg", "jpg"],
+                            },
+                        ],
+                        properties: [],
+                    })
+                    .then(file => {
+                        if (file) {
+                            fs.writeFile(
+                                file.filePath,
+                                img.toPNG(),
+                                "base64",
+                                function (err) {
+                                    if (err) throw err;
+                                    console.log("Saved!");
+                                }
+                            );
+                        }
+                    })
+                    .catch(err => console.error("ERROR SAVING IMAGE", err));
+            })
+            .catch(err => console.error("ERROR CAPTURING SCREENSHOT", err));
     }
 
     rotate() {

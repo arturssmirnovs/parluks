@@ -11,7 +11,7 @@ const BUILD_VERSION = 10;
 
 const STORE_VERSION = false;
 
-const API_URL = "https://raw.githubusercontent.com/arturssmirnovs/parluks/main/package.json?token=ABWPH6CMSXZBBIG5DD5U76S76XHXW&v=2";
+const API_URL = "https://raw.githubusercontent.com/arturssmirnovs/parluks/main/src/package.json?token=ABWPH6CMSXZBBIG5DD5U76S76XHXW&v=2";
 
 const store = new Store({
   configName: 'user-preferences',
