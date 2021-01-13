@@ -42,6 +42,8 @@ function createWindow () {
   mainWindow = new BrowserWindow({
     width,
     height,
+    frame: false,
+    titleBarStyle: 'hidden',
     webPreferences: {
       nodeIntegration: true,
       enableRemoteModule: true,
