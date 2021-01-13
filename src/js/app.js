@@ -1,7 +1,16 @@
 const url = require('url');
+const customTitlebar = require('custom-electron-titlebar');
 const { shell } = require('electron')
 const Device = require('./device.js');
 const Store = require('./store.js');
+
+// Titlebar Config
+new customTitlebar.Titlebar({
+  backgroundColor: customTitlebar.Color.fromHex('#222834'),
+  icon: './app.ico',
+  titleHorizontalAlignment: 'left',
+  menu: false,
+});
 
 const $ = document.querySelector.bind(document);
 
