@@ -14,5 +14,8 @@
     "electron-packager": "^15.1.0",
     "electron-winstaller": "^4.0.1",
     "sumchecker": "^3.0.1"
+  },
+  "dependencies": {
+    "custom-electron-titlebar": "^3.2.5"
   }
 }
