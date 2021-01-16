@@ -4,7 +4,7 @@ const { shell } = require('electron')
 const Device = require('./device.js');
 const Store = require('./store.js');
 
-// Titlebar Config
+// Title bar Config
 new customTitlebar.Titlebar({
   backgroundColor: customTitlebar.Color.fromHex('#222834'),
   icon: './app.ico',
@@ -14,14 +14,16 @@ new customTitlebar.Titlebar({
 
 const $ = document.querySelector.bind(document);
 
+// app general version when compiling to installation files
 const VERSION = "1.0.0";
 
-const BUILD_VERSION = 10;
+// Build version when compiling app to installable files
+const BUILD_VERSION = 11;
 
-const STORE_VERSION = false;
+// URL where compare BUILD_VERSION and check if update available
+const API_URL = "https://raw.githubusercontent.com/arturssmirnovs/parluks/main/src/package.json";
 
-const API_URL = "https://raw.githubusercontent.com/arturssmirnovs/parluks/main/src/package.json?token=ABWPH6CMSXZBBIG5DD5U76S76XHXW&v=2";
-
+// Locally stored user preferences
 const store = new Store({
   configName: 'user-preferences',
   defaults: {
@@ -39,7 +41,6 @@ const store = new Store({
 class App {
 
   constructor() {
-
     let devices = Device.getDevices();
 
     this.devices = [
@@ -67,10 +68,10 @@ class App {
   }
 
   about() {
-    document.getElementById("about").style.display = "block";
-
+    // Rendering devices
     this.renderDevices();
 
+    // check if update available based on BUILD_VERSION
     const formData = new FormData();
     fetch(API_URL, {
       method: "GET"
@@ -83,17 +84,19 @@ class App {
           shell.openExternal("https://github.com/arturssmirnovs/parluks");
         });
       }
-
     }.bind(this)).catch(function (error) {
 
     });
 
+    // displaying start block
+    document.getElementById("about").style.display = "block";
     document.getElementById("about-start").addEventListener('click', () => {
       document.getElementById("about").style.display = "none";
     });
   }
 
   run() {
+    // creating devices and attaching events @see device.js
     this.devices.forEach(function(device) {
       device.create();
     });
@@ -103,6 +106,7 @@ class App {
 
   renderDevices() {
     document.getElementById("devices-list").innerHTML = "";
+
     let activeDevices = [];
     this.devices.forEach(function(device, index) {
       activeDevices.push(device.attrs.name)
@@ -112,6 +116,7 @@ class App {
     devices.forEach(function(device, index) {
 
       var input = document.createElement("input");
+
       input.setAttribute("type", "checkbox");
       input.className = "form-check-input";
       input.setAttribute("name", "device[]");
@@ -136,7 +141,6 @@ class App {
   }
 
   settingsApply() {
-
     if (this.settings_display_mode) {
       let body = document.getElementById("body");
 
@@ -158,7 +162,6 @@ class App {
   }
 
   settings() {
-
     store.set("settings_display_mode", document.getElementById("settings-mode").value);
     this.settings_display_mode = store.get("settings_display_mode");
 

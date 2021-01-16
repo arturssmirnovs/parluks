@@ -39,6 +39,7 @@ function createWindow () {
     store.set('version', VERSION);
   }
 
+  // comment out frame & titleBarStyle to see electron developer console for debug
   mainWindow = new BrowserWindow({
     width,
     height,

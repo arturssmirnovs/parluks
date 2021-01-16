@@ -3,17 +3,6 @@ const path = require("path");
 const fs = require("fs");
 
 class Device {
-    // {
-    //     "name": "Galaxy Note 3",
-    //     "featured": false,
-    //     "width": 360,
-    //     "userAgent": "Mozilla/5.0 (Linux; U; Android 4.3; en-us; SM-N900T Build/JSS15J) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30",
-    //     "touch": true,
-    //     "os": "",
-    //     "pixelRatio": 3,
-    //     "height": 640,
-    //     "type": "phone"
-    // },
     constructor(attrs, app) {
         this.attrs = attrs;
         this.app = app;
@@ -27,7 +16,6 @@ class Device {
     }
 
     create() {
-
         var div = document.createElement("div");
         div.className = "device-view";
 
@@ -51,9 +39,6 @@ class Device {
 
         this.webview.src = document.getElementById("search-value").value;
 
-        // rotate
-        // screenshot
-        // developer tools
         var divActionsWrapper = document.createElement("div");
         divActionsWrapper.className = "device-view-header";
 
@@ -94,23 +79,13 @@ class Device {
 
         document.getElementById("main").appendChild(div);
 
-        const preloadFile = 'file://' + require('path').resolve('./js/preload.js');
-        this.webview.setAttribute('preload', preloadFile);
-
         this.webview.addEventListener('dom-ready', e => {
-            console.log('webiew dom-ready');
 
             this.injectCSS();
-
             this.injectJS();
 
             if (!this.webContents) {
                 this.webContents = electron.remote.webContents.fromId(this.webview.getWebContentsId());
-                this.webContents.on('dom-ready', e => {
-                    console.log('webContents dom-ready');
-                });
-
-                this.webview.send('our-secrets', 'ping');
 
                 this.webContents.on('did-navigate', (isMainFrame, pageUrl) => {
                     if (pageUrl) {
@@ -146,7 +121,7 @@ class Device {
                     this.app.scroll(data.value);
                 }
             } catch(err) {
-                console.dir(e);
+                //console.dir(e);
             }
         });
     }
@@ -258,9 +233,8 @@ class Device {
     }
 
     injectJS() {
-
         if (this.app.settings_meta_override == 1) {
-            this.webview.executeJavaScript(`const metas = document.getElementsByTagName('meta');
+            this.webview.executeJavaScript(`var metas = document.getElementsByTagName('meta');
             for (let i = 0; i < metas.length; i++) {
                 if (metas[i].getAttribute('name') === "viewport") {
                     metas[i].setAttribute('content', 'width=device-width');
@@ -270,19 +244,27 @@ class Device {
             var meta = document.createElement('meta');
             meta.name = "viewport";
             meta.content = "width=device-width";
-            document.getElementsByTagName('head')[0].appendChild(meta);
+            if (document.getElementsByTagName('head').length) {
+                document.getElementsByTagName('head')[0].appendChild(meta);
+            }
             
-            `, true);
+            `, true).then( (result) => {
+                console.log(result);
+            });
         }
 
         if (this.app.settings_scroll == 1) {
-            this.webview.executeJavaScript(`window.onscroll = function() { console.log(JSON.stringify({action:"SCROLL", "value": this.scrollY})) }`, true);
+            this.webview.executeJavaScript(`window.onscroll = function() { console.log(JSON.stringify({action:"SCROLL", "value": this.scrollY})) }`, true).then( (result) => {
+                console.log(result);
+            });
         }
     }
 
     scroll(value) {
         if (this.app.settings_scroll == 1) {
-            this.webview.executeJavaScript(`window.scrollTo(0, ${value});`, true);
+            this.webview.executeJavaScript(`window.scrollTo(0, ${value});`, true).then( (result) => {
+                console.log(result);
+            });
         }
     }
 
