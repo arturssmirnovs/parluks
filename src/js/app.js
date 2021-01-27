@@ -6,13 +6,6 @@ const {
 } = require("electron");
 const Device = require('./device.js');
 const Store = require('./store.js');
-const {
-  getText,
-  copyText,
-  cutText,
-  pasteText,
-  deleteText,
-} = require("./functions");
 
 // Title bar Config
 new customTitlebar.Titlebar({
@@ -25,6 +18,28 @@ new customTitlebar.Titlebar({
 // Input Context Menu
 const searchValue = document.getElementById("search-value");
 const menu = new Menu();
+
+menu.append(
+  new MenuItem({
+    label: "Undo",
+    accelerator: process.platform === "darwin" ? "Command+Z" : "Ctrl+Z",
+    role: "undo",
+  })
+);
+
+menu.append(
+  new MenuItem({
+    label: "Redo",
+    accelerator: process.platform === "darwin" ? "Command+Y" : "Ctrl+Y",
+    role: "redo",
+  })
+);
+
+menu.append(
+  new MenuItem({
+    type: "separator",
+  })
+);
 
 menu.append(
   new MenuItem({
