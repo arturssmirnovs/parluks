@@ -1,6 +1,9 @@
 const url = require('url');
 const customTitlebar = require('custom-electron-titlebar');
-const { shell } = require('electron')
+const {
+  shell,
+  remote: { Menu, MenuItem, getCurrentWindow },
+} = require("electron");
 const Device = require('./device.js');
 const Store = require('./store.js');
 
@@ -11,6 +14,65 @@ new customTitlebar.Titlebar({
   titleHorizontalAlignment: 'left',
   menu: false,
 });
+
+// Input Context Menu
+const searchValue = document.getElementById("search-value");
+const menu = new Menu();
+
+menu.append(
+  new MenuItem({
+    label: "Undo",
+    accelerator: process.platform === "darwin" ? "Command+Z" : "Ctrl+Z",
+    role: "undo",
+  })
+);
+
+menu.append(
+  new MenuItem({
+    label: "Redo",
+    accelerator: process.platform === "darwin" ? "Command+Y" : "Ctrl+Y",
+    role: "redo",
+  })
+);
+
+menu.append(
+  new MenuItem({
+    type: "separator",
+  })
+);
+
+menu.append(
+  new MenuItem({
+    label: "Cut",
+    accelerator: process.platform === "darwin" ? "Command+X" : "Ctrl+X",
+    role: "cut",
+  })
+);
+menu.append(
+  new MenuItem({
+    label: "Copy",
+    accelerator: process.platform === "darwin" ? "Command+C" : "Ctrl+C",
+    role: "copy",
+  })
+);
+menu.append(
+  new MenuItem({
+    label: "Paste",
+    accelerator: process.platform === "darwin" ? "Command+V" : "Ctrl+V",
+    role: "paste",
+  })
+);
+menu.append(
+  new MenuItem({
+    label: "Delete",
+    role: "delete",
+  })
+);
+
+searchValue.oncontextmenu = e => {
+  e.preventDefault();
+  menu.popup(getCurrentWindow());
+};
 
 const $ = document.querySelector.bind(document);
 
