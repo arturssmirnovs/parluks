@@ -30,37 +30,27 @@ menu.append(
   new MenuItem({
     label: "Cut",
     accelerator: process.platform === "darwin" ? "Command+X" : "Ctrl+X",
-    click() {
-      const selectedText = getText(searchValue)
-      cutText(selectedText, searchValue)
-    },
+    role: "cut",
   })
 );
 menu.append(
   new MenuItem({
     label: "Copy",
     accelerator: process.platform === "darwin" ? "Command+C" : "Ctrl+C",
-    click() {
-      const selectedText = getText(searchValue)
-      copyText(selectedText)
-    },
+    role: "copy",
   })
 );
 menu.append(
   new MenuItem({
     label: "Paste",
     accelerator: process.platform === "darwin" ? "Command+V" : "Ctrl+V",
-    click() {
-      pasteText(searchValue)
-    },
+    role: "paste",
   })
 );
 menu.append(
   new MenuItem({
     label: "Delete",
-    click() {
-      deleteText(searchValue)
-    },
+    role: "delete",
   })
 );
 
