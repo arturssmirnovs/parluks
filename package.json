@@ -3,19 +3,21 @@
   "version": "1.0.0",
   "build": 11,
   "description": "Browser for developers",
-  "main": "main.js",
+  "main": "./dist/main.js",
   "scripts": {
-    "start": "electron ."
+    "compile": "tsc",
+    "start": "npm run compile && electron ."
   },
   "author": "GitHub",
   "license": "CC0-1.0",
   "devDependencies": {
+    "@types/node": "^12.19.12",
+    "copyfiles": "^2.4.1",
+    "custom-electron-titlebar": "^3.2.6",
     "electron": "^11.1.1",
     "electron-packager": "^15.1.0",
     "electron-winstaller": "^4.0.1",
-    "sumchecker": "^3.0.1"
-  },
-  "dependencies": {
-    "custom-electron-titlebar": "^3.2.5"
+    "sumchecker": "^3.0.1",
+    "typescript": "^4.1.3"
   }
 }
