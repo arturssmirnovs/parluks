@@ -83,7 +83,16 @@
 
       <div id="settings-wrapper" style="display: none">
         <div id="settings">
-          <h3 class="mt-0">Settings</h3>
+          <div style="display: flex; justify-content: space-between">
+            <h3 class="mt-0">Settings</h3>
+            <button
+              id="action-settings-close"
+              class="btn btn-styled btn-base-5"
+              style="font-size: 1.2rem"
+            >
+              &times;
+            </button>
+          </div>
 
           <div>
             <label>Display mode</label>
@@ -130,12 +139,21 @@
             </select>
           </div>
 
-          <button
-            id="action-settings-close"
-            class="btn btn-styled btn-lg btn-base-1"
-          >
-            Save
-          </button>
+          <div style="display: flex; justify-content: flex-end">
+            <button
+              id="action-settings-cancel"
+              class="btn btn-styled btn-lg btn-base-3"
+              style="margin-right: 8px"
+            >
+              Cancel
+            </button>
+            <button
+              id="action-settings-save"
+              class="btn btn-styled btn-lg btn-base-1"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
 

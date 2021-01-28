@@ -1,4 +1,5 @@
 import { Titlebar, Color } from "custom-electron-titlebar";
+import { setGlobalLeakWarningThreshold } from "custom-electron-titlebar/lib/common/event";
 import { shell, remote } from "electron";
 import Device from "./device";
 import Store from "./store";
@@ -366,13 +367,29 @@ class App {
       actionSettingsWrapper.style.display = "block";
     });
 
-    const actionSettingsClose = $("#action-settings-close")!;
-    actionSettingsClose.addEventListener("click", () => {
+    const actionSettingsSave = $("#action-settings-save")! as HTMLButtonElement;
+    actionSettingsSave.addEventListener("click", () => {
       actionSettingsWrapper.style.display = "none";
       this.settings();
     });
 
-    const actionDonate = $("#action-donate")!;
+    const actionSettingsCancel = $(
+      "#action-settings-cancel"
+    )! as HTMLButtonElement;
+
+    actionSettingsCancel.addEventListener("click", () => {
+      actionSettingsWrapper.style.display = "none";
+    });
+
+    const actionSettingsClose = $(
+      "#action-settings-close"
+    )! as HTMLButtonElement;
+
+    actionSettingsClose.addEventListener("click", () => {
+      actionSettingsWrapper.style.display = "none";
+    });
+
+    const actionDonate = $("#action-donate")! as HTMLSpanElement;
     actionDonate.addEventListener("click", () => {
       shell.openExternal("https://github.com/arturssmirnovs/parluks");
     });
