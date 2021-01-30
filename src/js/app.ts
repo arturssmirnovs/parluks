@@ -183,8 +183,7 @@ const VERSION = "1.0.0";
 const BUILD_VERSION = 11;
 
 // URL where compare BUILD_VERSION and check if update available
-const API_URL =
-  "https://raw.githubusercontent.com/arturssmirnovs/parluks/main/src/package.json";
+const API_URL = "https://raw.githubusercontent.com/arturssmirnovs/parluks/main/src/package.json";
 
 // Locally stored user preferences
 const store = new Store({
