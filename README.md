@@ -1,6 +1,6 @@
 
 <h1 align="center">
-  <a href="https://github.com/arturssmirnovs/parluks"><img src="https://raw.githubusercontent.com/arturssmirnovs/parluks/main/src/images/logo.png" alt="PARLUKS" width="200"></a>
+  <a href="https://github.com/arturssmirnovs/parluks"><img src="https://raw.githubusercontent.com/arturssmirnovs/parluks/main/images/logo.png" alt="PARLUKS" width="200"></a>
   <br/>
   <br/>
 </h1>
