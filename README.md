@@ -54,7 +54,7 @@ To clone and run this application, you'll need [Git](https://git-scm.com) and [N
 $ git clone https://github.com/arturssmirnovs/parluks
 
 # Go into the repository
-$ cd parluks/src
+$ cd parluks
 
 # Install dependencies
 $ npm install
