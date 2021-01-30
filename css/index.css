@@ -2,15 +2,20 @@ body {
   padding: 0;
   margin: 0;
   background-color: rgb(40, 44, 52);
-  font-family:"Roboto",sans-serif;
+  font-family: "Roboto", sans-serif;
 }
 
-h1,h2,h3,h4,h5,h6 {
-  font-family: "Nunito",sans-serif;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Nunito", sans-serif;
   color: #000;
 }
 label {
-  font-family: "Nunito",sans-serif;
+  font-family: "Nunito", sans-serif;
   font-weight: bold;
   display: block;
   color: #000;
@@ -28,7 +33,7 @@ label {
   text-align: center;
 }
 
-.search {
+/* .search {
   -webkit-appearance: none;
   outline: none;
   width: 45%;
@@ -46,6 +51,29 @@ label {
 .search:hover {
   -webkit-appearance: none;
   border-color: #1890ff;
+} */
+
+.search {
+  width: 45%;
+  height: 30px;
+  padding: 5px 8px;
+  margin-top: 10px;
+  font-size: 14px;
+  color: inherit;
+  border-radius: 5px;
+  border: 2px solid transparent;
+  outline: none;
+  background: #3c4048;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+.search:hover {
+  border-color: #515661;
+}
+
+.search:focus {
+  border-color: #55a6e4;
 }
 
 .action-left {
@@ -121,7 +149,6 @@ label {
   padding: 20px;
 }
 #devices-list {
-
 }
 #devices-list:after {
   clear: both;
@@ -133,10 +160,8 @@ label {
   width: 50%;
 }
 #devices-list .device input {
-
 }
 #devices-list .device label {
-
 }
 
 .device-view {
@@ -161,7 +186,6 @@ label {
   align-items: center;
 }
 .device-view .device-view-actions {
-
 }
 .device-view .device-view-actions img {
   height: 20px;
@@ -170,7 +194,7 @@ label {
   display: inline-flex;
   margin: 2.5px auto 2.5px auto;
   cursor: pointer;
-  margin-bottom: .5rem;
+  margin-bottom: 0.5rem;
 }
 .device-view webview {
   background-size: 100% 100%;
@@ -187,14 +211,12 @@ label {
 }
 .device-view webview.television {
   background-image: url("../images/tv.png");
-  padding: 3.0% 3.0% 3.0% 3.0%;
+  padding: 3% 3% 3% 3%;
 }
 .device-view webview.laptop {
   background-image: url("../images/laptop.png");
   padding: 6.8% 3.2% 3.5% 3.3%;
 }
-
-
 
 .device-view webview.phone.rotated {
   background-image: url("../images/phone-rotated.png");
@@ -217,8 +239,6 @@ label {
   background-image: inherit !important;
   padding: 0px !important;
 }
-
-
 
 #settings-wrapper {
   position: fixed;
