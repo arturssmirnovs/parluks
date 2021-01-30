@@ -1,5 +1,5 @@
+import * as path from "path";
 import { Titlebar, Color } from "custom-electron-titlebar";
-import { setGlobalLeakWarningThreshold } from "custom-electron-titlebar/lib/common/event";
 import { shell, remote } from "electron";
 import Device from "./device";
 import Store from "./store";
@@ -7,6 +7,7 @@ import Store from "./store";
 const searchValue = document.getElementById(
   "search-value"
 )! as HTMLInputElement;
+const searchForm = document.getElementById("search") as HTMLFormElement;
 const settingsMode = document.getElementById(
   "settings-mode"
 )! as HTMLSelectElement;
@@ -33,64 +34,145 @@ new Titlebar({
 });
 
 // Input Context Menu
-const menu = new remote.Menu();
+(() => {
+  const menu = new remote.Menu();
+  menu.append(
+    new remote.MenuItem({
+      icon: remote.nativeImage.createFromPath(
+        path.join(
+          __dirname,
+          "..",
+          "..",
+          "images",
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "undo-dark.png"
+            : "undo.png"
+        )
+      ),
+      accelerator: process.platform === "darwin" ? "Command+Z" : "Ctrl+Z",
+      role: "undo",
+    })
+  );
 
-menu.append(
-  new remote.MenuItem({
-    label: "Undo",
-    accelerator: process.platform === "darwin" ? "Command+Z" : "Ctrl+Z",
-    role: "undo",
-  })
-);
+  menu.append(
+    new remote.MenuItem({
+      icon: remote.nativeImage.createFromPath(
+        path.join(
+          __dirname,
+          "..",
+          "..",
+          "images",
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "redo-dark.png"
+            : "redo.png"
+        )
+      ),
+      accelerator: process.platform === "darwin" ? "Command+Y" : "Ctrl+Y",
+      role: "redo",
+    })
+  );
 
-menu.append(
-  new remote.MenuItem({
-    label: "Redo",
-    accelerator: process.platform === "darwin" ? "Command+Y" : "Ctrl+Y",
-    role: "redo",
-  })
-);
+  menu.append(
+    new remote.MenuItem({
+      type: "separator",
+    })
+  );
 
-menu.append(
-  new remote.MenuItem({
-    type: "separator",
-  })
-);
+  menu.append(
+    new remote.MenuItem({
+      icon: remote.nativeImage.createFromPath(
+        path.join(
+          __dirname,
+          "..",
+          "..",
+          "images",
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "scissors-dark.png"
+            : "scissors.png"
+        )
+      ),
+      accelerator: process.platform === "darwin" ? "Command+X" : "Ctrl+X",
+      role: "cut",
+    })
+  );
+  menu.append(
+    new remote.MenuItem({
+      icon: remote.nativeImage.createFromPath(
+        path.join(
+          __dirname,
+          "..",
+          "..",
+          "images",
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "copy-dark.png"
+            : "copy.png"
+        )
+      ),
+      accelerator: process.platform === "darwin" ? "Command+C" : "Ctrl+C",
+      role: "copy",
+    })
+  );
+  menu.append(
+    new remote.MenuItem({
+      icon: remote.nativeImage.createFromPath(
+        path.join(
+          __dirname,
+          "..",
+          "..",
+          "images",
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "paste-dark.png"
+            : "paste.png"
+        )
+      ),
+      accelerator: process.platform === "darwin" ? "Command+V" : "Ctrl+V",
+      role: "paste",
+    })
+  );
 
-menu.append(
-  new remote.MenuItem({
-    label: "Cut",
-    accelerator: process.platform === "darwin" ? "Command+X" : "Ctrl+X",
-    role: "cut",
-  })
-);
-menu.append(
-  new remote.MenuItem({
-    label: "Copy",
-    accelerator: process.platform === "darwin" ? "Command+C" : "Ctrl+C",
-    role: "copy",
-  })
-);
-menu.append(
-  new remote.MenuItem({
-    label: "Paste",
-    accelerator: process.platform === "darwin" ? "Command+V" : "Ctrl+V",
-    role: "paste",
-  })
-);
-menu.append(
-  new remote.MenuItem({
-    label: "Delete",
-    role: "delete",
-  })
-);
+  // menu.append(
+  //   new remote.MenuItem({
+  //     label: `Paste and go to "${clipboard.readText()}"`,
+  //     accelerator:
+  //       process.platform === "darwin" ? "Command+Shift+L" : "Ctrl+Shift+L",
+  //     role: "paste",
+  //     click() {
+  //       searchForm.submit();
+  //     },
+  //   })
+  // );
 
-searchValue.oncontextmenu = e => {
-  e.preventDefault();
-  menu.popup({
-    window: remote.getCurrentWindow(),
-  });
-};
+  menu.append(
+    new remote.MenuItem({
+      icon: remote.nativeImage.createFromPath(
+        path.join(
+          __dirname,
+          "..",
+          "..",
+          "images",
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "trash-dark.png"
+            : "trash.png"
+        )
+      ),
+      role: "delete",
+    })
+  );
+
+  searchValue.oncontextmenu = e => {
+    e.preventDefault();
+    menu.popup({
+      window: remote.getCurrentWindow(),
+    });
+  };
+})();
+
+searchValue.addEventListener("focus", () => searchValue.select());
+searchValue.addEventListener("focusin", () => (searchValue.placeholder = ""));
+searchValue.addEventListener(
+  "focusout",
+  () => (searchValue.placeholder = "Enter web address")
+);
 
 const $ = document.querySelector.bind(document);
 

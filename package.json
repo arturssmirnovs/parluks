@@ -6,6 +6,7 @@
   "main": "./dist/main.js",
   "scripts": {
     "compile": "tsc",
+    "watch": "tsc -w",
     "start": "npm run compile && electron ."
   },
   "author": "GitHub",
