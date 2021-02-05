@@ -32,6 +32,14 @@ class Device {
     var div = document.createElement("div");
     div.className = "device-view";
 
+    div.addEventListener('mouseenter', e => {
+      this.app.active = this.attrs.name;
+    });
+
+    div.addEventListener('mouseleave', e => {
+      this.app.active = null;
+    });
+
     var label = document.createElement("h2");
     label.innerHTML =
       this.attrs.name +
@@ -313,10 +321,11 @@ class Device {
 
   scroll(value: number) {
     if (this.app.settings_scroll == 1) {
+      console.log(value);
       this.webview
         .executeJavaScript(`window.scrollTo(0, ${value});`, true)
         .then(result => {
-          console.log(result);
+
         });
     }
   }

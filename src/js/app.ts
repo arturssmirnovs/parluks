@@ -203,6 +203,7 @@ const store = new Store({
 class App {
   devices: Device[];
   version: string | null;
+  active: string | null;
   settings_display_mode: string;
   settings_scroll: number;
   settings_zoom_level: number;
@@ -516,7 +517,6 @@ class App {
     newDevices.forEach(index => {
       this.devices.push(new Device(_devices[+index], this));
     });
-    // }.bind(this));
 
     this.devices.forEach(function (device) {
       device.create();
@@ -525,8 +525,10 @@ class App {
 
   scroll(value: number) {
     this.devices.forEach(function (device) {
-      device.scroll(value);
-    });
+      if (device.attrs.name !== this.active) {
+        device.scroll(value);
+      }
+    }.bind(this));
   }
 }
 
