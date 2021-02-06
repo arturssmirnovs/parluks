@@ -151,7 +151,7 @@ class Device {
       try {
         let data = JSON.parse(e.message);
         console.log(data);
-        if (data.action == "SCROLL") {
+        if (data.action == "SCROLL" && this.attrs.name == this.app.active) {
           this.app.scroll(data.value);
         }
       } catch (err) {
